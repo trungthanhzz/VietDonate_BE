@@ -84,16 +84,8 @@ namespace VietDonate.Infrastructure
 
         private static IServiceCollection AddIdentityServices(this IServiceCollection services)
         {
-            services.AddIdentity<AppIdentityUser, AppIdentityRole>(options =>
-            {
-                options.Password.RequireDigit = false;
-                options.Password.RequiredLength = 6;
-                options.Password.RequireNonAlphanumeric = false;
-                options.Password.RequireUppercase = false;
-                options.Password.RequireLowercase = false;
-            })
-            .AddEntityFrameworkStores<AppDbContext>()
-            .AddDefaultTokenProviders();
+            services.AddIdentityApiEndpoints<AppIdentityUser>()
+                .AddEntityFrameworkStores<AppDbContext>();
             return services;
         }
 

@@ -17,7 +17,7 @@ namespace VietDonate.Infrastructure.Common.Persistance.Configurations
             
             // Cấu hình CreateDate
             builder.Property(r => r.CreatedDate)
-                .HasColumnType("timestamp without time zone")
+                .HasColumnType("timestamp with time zone")
                 .IsRequired();
             
             // Cấu hình các properties mở rộng nếu có
