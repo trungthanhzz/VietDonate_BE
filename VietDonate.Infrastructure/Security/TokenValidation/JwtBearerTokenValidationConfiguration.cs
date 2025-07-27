@@ -6,7 +6,7 @@ using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using VietDonate.Infrastructure.Security.TokenGenerator;
 
-namespace CleanArchitecture.Infrastructure.Security.TokenValidation;
+namespace VietDonate.Infrastructure.Security.TokenValidation;
 
 public sealed class JwtBearerTokenValidationConfiguration(IOptions<JwtSettings> jwtSettings)
     : IConfigureNamedOptions<JwtBearerOptions>

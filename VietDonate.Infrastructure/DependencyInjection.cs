@@ -6,14 +6,19 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using CleanArchitecture.Infrastructure.Common.Mediator;
+using VietDonate.Infrastructure.Common.Mediator;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Infrastructure.Common.Persistance;
 using Microsoft.EntityFrameworkCore;
-using CleanArchitecture.Infrastructure.Security.TokenValidation;
+using VietDonate.Infrastructure.Security.TokenValidation;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using VietDonate.Application.Common.Interfaces;
 using VietDonate.Infrastructure.Security.TokenGenerator;
+using VietDonate.Infrastructure.Configurations;
+using Microsoft.AspNetCore.Identity;
+using VietDonate.Infrastructure.Identity;
+using VietDonate.Application.Common.Interfaces.IRepository;
+using VietDonate.Infrastructure.Repositories;
 
 namespace VietDonate.Infrastructure
 {
@@ -21,12 +26,23 @@ namespace VietDonate.Infrastructure
     {
         public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
         {
+            services.AddConfigurations(configuration);
+
             services
                 .AddBackgroundServices(configuration)
                 .AddAuthentication(configuration)
                 .AddAuthorization()
+                .AddMediator()
                 .AddPersistence(configuration)
-                .AddMediator();
+                .AddRepositories()
+                .AddIdentityServices();
+
+            return services;
+        }
+
+        private static IServiceCollection AddConfigurations(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<DbConfig>(configuration.GetSection("DBConfig"));
             return services;
         }
 
@@ -57,10 +73,33 @@ namespace VietDonate.Infrastructure
 
         private static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
         {
-            services.AddDbContext<AppDbContext>(options => options.UseNpgsql(configuration.GetConnectionString("123")));
+            services.AddDbContext<AppDbContext>((serviceProvider, options) =>
+            {
+                var dbConfig = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<DbConfig>>().Value;
+                options.UseNpgsql(dbConfig.BuildConnectionString());
+            });
 
-            // DI Repositories
+            return services;
+        }
 
+        private static IServiceCollection AddIdentityServices(this IServiceCollection services)
+        {
+            services.AddIdentity<AppIdentityUser, AppIdentityRole>(options =>
+            {
+                options.Password.RequireDigit = false;
+                options.Password.RequiredLength = 6;
+                options.Password.RequireNonAlphanumeric = false;
+                options.Password.RequireUppercase = false;
+                options.Password.RequireLowercase = false;
+            })
+            .AddEntityFrameworkStores<AppDbContext>()
+            .AddDefaultTokenProviders();
+            return services;
+        }
+
+        private static IServiceCollection AddRepositories(this IServiceCollection services)
+        {
+            services.AddScoped<ICampaignRepository, CampaignRepository>();
             return services;
         }
 

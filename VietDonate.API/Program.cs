@@ -4,6 +4,7 @@ using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using VietDonate.Application.Common.SwaggerExtension;
 using VietDonate.Infrastructure;
+using VietDonate.Application;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
