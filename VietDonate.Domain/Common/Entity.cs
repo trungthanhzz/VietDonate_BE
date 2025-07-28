@@ -1,6 +1,4 @@
-using VietDonate.Domain.Common;
-
-namespace CleanArchitecture.Domain.Common;
+namespace VietDonate.Domain.Common;
 
 public abstract class Entity
 {

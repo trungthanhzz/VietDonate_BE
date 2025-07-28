@@ -1,24 +1,23 @@
-
-using CleanArchitecture.Domain.Common;
-using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using VietDonate.Application.Common.Mediator;
 using VietDonate.Domain.Campaigns;
 using VietDonate.Domain.Common;
+using VietDonate.Infrastructure.Identity;
 
 namespace VietDonate.Infrastructure.Common.Persistance;
 
-public class AppDbContext(DbContextOptions options, IPublisher _publisher) : DbContext(options)
+public class AppDbContext(DbContextOptions<AppDbContext> options) : IdentityDbContext<AppIdentityUser, AppIdentityRole, Guid>(options)
 {
     public DbSet<Campaign> Campaigns { get; set; } = null!;
+    public DbSet<AppIdentityUser> Users { get; set; } = null!;
 
 
     public async override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        var domainEvents = ChangeTracker.Entries<Entity>()
-           .SelectMany(entry => entry.Entity.PopDomainEvents())
-           .ToList();
-        await PublishDomainEvents(domainEvents);
+        //var domainEvents = ChangeTracker.Entries<Entity>()
+        //   .SelectMany(entry => entry.Entity.PopDomainEvents())
+        //   .ToList();
+        //await PublishDomainEvents(domainEvents);
         return await base.SaveChangesAsync(cancellationToken);
     }
 
@@ -30,11 +29,11 @@ public class AppDbContext(DbContextOptions options, IPublisher _publisher) : DbC
     }
 
 
-    private async Task PublishDomainEvents(List<IDomainEvent> domainEvents)
-    {
-        foreach (var domainEvent in domainEvents)
-        {
-            await _publisher.Publish(domainEvent);
-        }
-    }
+    //private async Task PublishDomainEvents(List<IDomainEvent> domainEvents)
+    //{
+    //    foreach (var domainEvent in domainEvents)
+    //    {
+    //        await _publisher.Publish(domainEvent);
+    //    }
+    //}
 }

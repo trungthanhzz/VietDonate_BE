@@ -6,7 +6,7 @@ using System.Reflection;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Application.Common.SwaggerExtension;
 
-namespace VietDonate.Infrastructure
+namespace VietDonate.Application
 {
     public static class DependencyInjection
     {

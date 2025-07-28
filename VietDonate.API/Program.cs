@@ -4,6 +4,8 @@ using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
 using VietDonate.Application.Common.SwaggerExtension;
 using VietDonate.Infrastructure;
+using VietDonate.Application;
+using VietDonate.Infrastructure.Identity;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -42,6 +44,8 @@ app.UseSwaggerUI(options =>
         options.SwaggerEndpoint($"../swagger/{description.GroupName}/swagger.json", description.GroupName.ToUpperInvariant());
     }
 });
+
+app.MapIdentityApi<AppIdentityUser>();
 
 app.UseHttpsRedirection();
 

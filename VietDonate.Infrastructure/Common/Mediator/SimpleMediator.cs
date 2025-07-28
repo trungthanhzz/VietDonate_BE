@@ -8,7 +8,7 @@ using Microsoft.Extensions.DependencyInjection;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Domain.Common;
 
-namespace CleanArchitecture.Infrastructure.Common.Mediator
+namespace VietDonate.Infrastructure.Common.Mediator
 {
     public class SimpleMediator : IMediator
     {
