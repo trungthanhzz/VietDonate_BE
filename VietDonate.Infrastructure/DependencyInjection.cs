@@ -15,8 +15,6 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using VietDonate.Application.Common.Interfaces;
 using VietDonate.Infrastructure.Security.TokenGenerator;
 using VietDonate.Infrastructure.Configurations;
-using Microsoft.AspNetCore.Identity;
-using VietDonate.Infrastructure.Identity;
 using VietDonate.Application.Common.Interfaces.IRepository;
 using VietDonate.Infrastructure.Repositories;
 
@@ -34,15 +32,14 @@ namespace VietDonate.Infrastructure
                 .AddAuthorization()
                 .AddMediator()
                 .AddPersistence(configuration)
-                .AddRepositories()
-                .AddIdentityServices();
+                .AddRepositories();
 
             return services;
         }
 
         private static IServiceCollection AddConfigurations(this IServiceCollection services, IConfiguration configuration)
         {
-            services.Configure<DbConfig>(configuration.GetSection("DBConfig"));
+            services.Configure<DbConfig>(configuration.GetSection(nameof(DbConfig)));
             return services;
         }
 
@@ -82,24 +79,21 @@ namespace VietDonate.Infrastructure
             return services;
         }
 
-        private static IServiceCollection AddIdentityServices(this IServiceCollection services)
-        {
-            services.AddIdentityApiEndpoints<AppIdentityUser>()
-                .AddEntityFrameworkStores<AppDbContext>();
-            return services;
-        }
-
         private static IServiceCollection AddRepositories(this IServiceCollection services)
         {
             services.AddScoped<ICampaignRepository, CampaignRepository>();
+            services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
+            services.AddScoped<IPasswordHasher, VietDonate.Infrastructure.Security.PasswordHasher.PasswordHasher>();
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             return services;
         }
 
         public static IServiceCollection AddMediator(this IServiceCollection services)
         {
-            services.AddSingleton<IMediator, SimpleMediator>();
-            services.AddSingleton<ISender>(sp => sp.GetRequiredService<IMediator>());
-            services.AddSingleton<IPublisher>(sp => sp.GetRequiredService<IMediator>());
+            services.AddScoped<IMediator, SimpleMediator>();
+            services.AddScoped<ISender>(sp => sp.GetRequiredService<IMediator>());
+            services.AddScoped<IPublisher>(sp => sp.GetRequiredService<IMediator>());
             return services;
         }
 

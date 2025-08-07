@@ -2,7 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using VietDonate.API.Common;
 using VietDonate.Application.Common.Mediator;
-using VietDonate.Application.Tokens.Queries.Generate;
+using VietDonate.Application.UseCases.Tokens.Queries.Generate;
 
 namespace VietDonate.API.Controllers
 {

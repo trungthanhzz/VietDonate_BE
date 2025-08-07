@@ -38,7 +38,8 @@ namespace VietDonate.Application
 
                 foreach (var handlerInterface in interfaces)
                 {
-                    services.AddTransient(handlerInterface, handlerType);
+                    Console.WriteLine($"Registering handler: {handlerType.Name} -> {handlerInterface.Name}");
+                    services.AddScoped(handlerInterface, handlerType);
                 }
             }
         }

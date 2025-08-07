@@ -22,23 +22,14 @@ namespace VietDonate.Infrastructure.Common.Mediator
         public Task<TResult> Send<TResult>(ICommand<TResult> command, CancellationToken cancellationToken = default)
         {
             var handlerType = typeof(ICommandHandler<,>).MakeGenericType(command.GetType(), typeof(TResult));
-            dynamic handler = _serviceProvider.GetService(handlerType);
-            if (handler == null)
-            {
-                throw new InvalidOperationException($"No handler registered for {handlerType.Name}");
-            }
+            dynamic handler = _serviceProvider.GetRequiredService(handlerType);
             return handler.Handle((dynamic)command, cancellationToken);
         }
 
         public Task<TResult> Send<TResult>(IQuery<TResult> query, CancellationToken cancellationToken = default)
         {
             var handlerType = typeof(IQueryHandler<,>).MakeGenericType(query.GetType(), typeof(TResult));
-            dynamic handler = _serviceProvider.GetService(handlerType);
-            if (handler == null)
-            {
-                throw new InvalidOperationException($"No handler registered for {handlerType.Name}");
-            }
-
+            dynamic handler = _serviceProvider.GetRequiredService(handlerType);
             return handler.Handle((dynamic)query, cancellationToken);
         }
 
