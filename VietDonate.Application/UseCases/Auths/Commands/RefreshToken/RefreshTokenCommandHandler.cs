@@ -68,9 +68,7 @@ namespace VietDonate.Application.UseCases.Auths.Commands.RefreshToken
                 // Generate new access token
                 var accessToken = _jwtTokenGenerator.GenerateToken(
                     id: user.Id,
-                    firstName: user.UserInformation?.FullName ?? string.Empty,
-                    lastName: string.Empty,
-                    email: user.UserInformation?.Email ?? string.Empty,
+                    jti: Guid.NewGuid(), 
                     permissions: new List<string>(),
                     roles: new List<string>()
                 );

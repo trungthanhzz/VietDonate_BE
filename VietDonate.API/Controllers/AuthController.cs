@@ -1,7 +1,5 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OutputCaching;
 using VietDonate.API.Common;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Infrastructure.ModelInfrastructure.Auths.Contracts;
@@ -32,7 +30,7 @@ namespace VietDonate.API.Controllers
         }
 
         [HttpPost]
-        [Route("refresh")]
+        [Route("refresh-token")]
         [AllowAnonymous]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
@@ -55,7 +53,4 @@ namespace VietDonate.API.Controllers
                 Problem);
         }
     }
-
-    public record RefreshTokenRequest(string RefreshToken);
-    public record LogoutRequest(string RefreshToken);
 }

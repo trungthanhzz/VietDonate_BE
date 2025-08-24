@@ -34,23 +34,19 @@ namespace VietDonate.Application.UseCases.Auths.Queries.Login
             
             var accessToken = jwtTokenGenerator.GenerateToken(
                 id: user.Id,
-                firstName: user.UserInformation?.FullName ?? string.Empty,
-                lastName: string.Empty,
-                email: user.UserInformation?.Email ?? string.Empty,
+                jti: Guid.NewGuid(),        
                 permissions: new List<string>(),
                 roles: new List<string>()
             );
             
-            // Bắt đầu transaction
             await unitOfWork.BeginTransactionAsync();
             
             try
             {
-                // Tạo refresh token
                 var refreshTokenValue = Guid.NewGuid().ToString();
                 var refreshTokenExpiresAt = query.IsRemember 
-                    ? DateTime.UtcNow.AddDays(30) // 30 days for "remember me"
-                    : DateTime.UtcNow.AddDays(7);  // 7 days for normal login
+                    ? DateTime.UtcNow.AddDays(30)
+                    : DateTime.UtcNow.AddDays(7);
                 
                 var refreshToken = new RefreshToken(
                     id: Guid.NewGuid(),

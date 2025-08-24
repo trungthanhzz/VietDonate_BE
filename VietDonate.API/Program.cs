@@ -5,6 +5,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using VietDonate.Application.Common.SwaggerExtension;
 using VietDonate.Infrastructure;
 using VietDonate.Application;
+using VietDonate.Infrastructure.Common.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -46,6 +47,8 @@ app.UseSwaggerUI(options =>
 
 app.UseHttpsRedirection();
 
+app.UseAuthentication();
+app.UseJwtBlacklist();
 app.UseAuthorization();
 
 app.MapControllers();

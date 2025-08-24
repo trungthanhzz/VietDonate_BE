@@ -12,10 +12,8 @@ public class JwtTokenGenerator(IOptions<JwtSettings> jwtOptions) : IJwtTokenGene
     private readonly JwtSettings _jwtSettings = jwtOptions.Value;
 
     public string GenerateToken(
-        Guid id,
-        string firstName,
-        string lastName,
-        string email,
+        Guid userId,
+        Guid jti,
         List<string> permissions,
         List<string> roles)
     {
@@ -24,10 +22,8 @@ public class JwtTokenGenerator(IOptions<JwtSettings> jwtOptions) : IJwtTokenGene
 
         var claims = new List<Claim>
         {
-            new(JwtRegisteredClaimNames.Name, firstName),
-            new(JwtRegisteredClaimNames.FamilyName, lastName),
-            new(JwtRegisteredClaimNames.Email, email),
-            new("id", id.ToString()),
+            new(ClaimTypes.UserData, userId.ToString()),
+            new(JwtRegisteredClaimNames.Jti, jti.ToString())
         };
 
         roles.ForEach(role => claims.Add(new(ClaimTypes.Role, role)));
