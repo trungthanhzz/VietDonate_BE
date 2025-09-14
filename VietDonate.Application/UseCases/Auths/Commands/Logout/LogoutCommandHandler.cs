@@ -1,7 +1,8 @@
-using ErrorOr;
+using VietDonate.Application.Common.Constants;
 using VietDonate.Application.Common.Interfaces;
 using VietDonate.Application.Common.Interfaces.IRepository;
 using VietDonate.Application.Common.Mediator;
+using VietDonate.Application.Common.Result;
 using VietDonate.Domain.Common;
 
 namespace VietDonate.Application.UseCases.Auths.Commands.Logout
@@ -10,54 +11,92 @@ namespace VietDonate.Application.UseCases.Auths.Commands.Logout
         IRefreshTokenRepository refreshTokenRepository,
         IRedisService redisService,
         IRequestContextService requestContextService)
-        : ICommandHandler<LogoutCommand, ErrorOr<LogoutResult>>
+        : ICommandHandler<LogoutCommand, Result<LogoutResult>>
     {
-        public async Task<ErrorOr<LogoutResult>> Handle(LogoutCommand request, CancellationToken cancellationToken)
+        public async Task<Result<LogoutResult>> Handle(LogoutCommand request, CancellationToken cancellationToken)
         {
-            if (!requestContextService.IsAuthenticated || string.IsNullOrEmpty(requestContextService.UserId))
-                return Error.Unauthorized("Logout.Unauthorized", "User not authenticated or user ID not found");
+            var userValidationResult = ValidateUserContext();
+            if (userValidationResult.IsFailure)
+                return userValidationResult;
 
-            var refreshToken = await refreshTokenRepository.GetByTokenAsync(request.RefreshToken);
-            if (refreshToken == null)
-                return Error.NotFound("Logout.InvalidToken", "Invalid refresh token");
+            var tokenValidationResult = await ValidateRefreshTokenAsync(request.RefreshToken);
+            if (tokenValidationResult.IsFailure)
+                return tokenValidationResult;
 
-            if (refreshToken.IsRevoked)
-                return Error.Validation("Logout.TokenRevoked", "Refresh token has already been revoked");
+            var blacklistResult = await BlacklistJwtTokenAsync();
+            if (blacklistResult.IsFailure)
+                return blacklistResult;
 
-            if (refreshToken.IsExpired)
-                return Error.Validation("Logout.TokenExpired", "Refresh token has expired");
+            var revokeResult = await RevokeRefreshTokenAsync(request.RefreshToken);
+            if (revokeResult.IsFailure)
+                return revokeResult;
 
-            if (refreshToken.UserId.ToString() != requestContextService.UserId)
-                return Error.Forbidden("Logout.TokenMismatch", "Refresh token does not belong to the authenticated user");
+            return Result.Success(new LogoutResult(SuccessMessages.Auth.LogoutSuccessful));
+        }
 
+        private Result<LogoutResult> ValidateUserContext()
+        {
+            if (string.IsNullOrEmpty(requestContextService.UserId))
+                return Result.Failure<LogoutResult>(LogoutErrors.UserIdRequired);
+
+            return Result.Success(new LogoutResult(SuccessMessages.Auth.UserContextValid));
+        }
+
+        private async Task<Result<LogoutResult>> ValidateRefreshTokenAsync(string refreshToken)
+        {
+            var token = await refreshTokenRepository.GetByTokenAsync(refreshToken);
+            if (token == null)
+                return Result.Failure<LogoutResult>(LogoutErrors.RefreshTokenNotFound);
+
+            if (token.IsExpired || token.IsRevoked)
+                return Result.Failure<LogoutResult>(LogoutErrors.RefreshTokenNotValid);
+
+            if (token.UserId.ToString() != requestContextService.UserId)
+                return Result.Failure<LogoutResult>(LogoutErrors.TokenMismatch);
+
+            return Result.Success(new LogoutResult(SuccessMessages.Auth.RefreshTokenValid));
+        }
+
+        private async Task<Result<LogoutResult>> BlacklistJwtTokenAsync()
+        {
             var jti = requestContextService.Jti;
-            if (!string.IsNullOrEmpty(jti))
-            {
-                var blacklistKey = ObjectExtentions.GetKeyBlackListRedis(jti);
-                var blacklistExpiry = requestContextService.GetJwtTtl();
+            if (string.IsNullOrEmpty(jti))
+                return Result.Success(new LogoutResult(SuccessMessages.Auth.NoJwtToBlacklist));
 
-                if (blacklistExpiry.HasValue && blacklistExpiry.Value > TimeSpan.Zero)
-                {
-                    var success = await redisService.SetAsync(blacklistKey, "revoked", blacklistExpiry.Value);
-                    if (!success)
-                        return Error.Failure("Logout.Failed", "Failed to add JWT token to blacklist");
-                }
-                else
-                {
-                    var success = await redisService.SetAsync(blacklistKey, "revoked", TimeSpan.FromMinutes(5));
-                    if (!success)
-                    {
-                        _ = await redisService.RemoveAsync(blacklistKey);
-                        return Error.Failure("Logout.Failed", "Failed to add JWT token to blacklist with fallback TTL");
-                    }
-                }
+            var blacklistKey = ObjectExtentions.GetKeyBlackListRedis(jti);
+            var blacklistExpiry = requestContextService.GetJwtTtl();
+
+            var expiry = CalculateBlacklistExpiry(blacklistExpiry);
+
+            var success = await redisService.SetAsync(blacklistKey, "revoked", expiry);
+            if (!success)
+            {
+                await CleanupBlacklistKeyAsync(blacklistKey);
+                return Result.Failure<LogoutResult>(LogoutErrors.BlacklistFailed);
             }
 
-            var revokeSuccess = await refreshTokenRepository.RevokeTokenAsync(request.RefreshToken);
-            if (!revokeSuccess)
-                return Error.Failure("Logout.Failed", "Failed to revoke refresh token");
+            return Result.Success(new LogoutResult(SuccessMessages.Auth.JwtTokenBlacklisted));
+        }
 
-            return new LogoutResult("Logout successful");
+        private async Task<Result<LogoutResult>> RevokeRefreshTokenAsync(string refreshToken)
+        {
+            var revokeSuccess = await refreshTokenRepository.RevokeTokenAsync(refreshToken);
+            if (!revokeSuccess)
+                return Result.Failure<LogoutResult>(LogoutErrors.RevokeFailed);
+
+            return Result.Success(new LogoutResult(SuccessMessages.Auth.RefreshTokenRevoked));
+        }
+
+        private static TimeSpan CalculateBlacklistExpiry(TimeSpan? blacklistExpiry)
+        {
+            return blacklistExpiry.HasValue && blacklistExpiry.Value > TimeSpan.Zero 
+                ? blacklistExpiry.Value 
+                : TimeSpan.FromMinutes(5);
+        }
+
+        private async Task CleanupBlacklistKeyAsync(string blacklistKey)
+        {
+            _ = await redisService.RemoveAsync(blacklistKey);
         }
     }
 }

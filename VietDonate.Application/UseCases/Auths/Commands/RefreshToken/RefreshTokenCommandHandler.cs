@@ -1,103 +1,154 @@
-using ErrorOr;
 using VietDonate.Application.Common.Interfaces;
 using VietDonate.Application.Common.Interfaces.IRepository;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Application.Common.Handlers;
+using VietDonate.Application.Common.Result;
+using VietDonate.Domain.Model.User;
 
 namespace VietDonate.Application.UseCases.Auths.Commands.RefreshToken
 {
-    public class RefreshTokenCommandHandler : BaseCommandHandler, ICommandHandler<RefreshTokenCommand, ErrorOr<RefreshTokenResult>>
+    public class RefreshTokenCommandHandler(
+        IRefreshTokenRepository refreshTokenRepository,
+        IUserRepository userRepository,
+        IJwtTokenGenerator jwtTokenGenerator,
+        IUnitOfWork unitOfWork)
+        : BaseCommandHandler(unitOfWork), ICommandHandler<RefreshTokenCommand, Result<RefreshTokenResult>>
     {
-        private readonly IRefreshTokenRepository _refreshTokenRepository;
-        private readonly IUserRepository _userRepository;
-        private readonly IJwtTokenGenerator _jwtTokenGenerator;
+        private const int AccessTokenExpirationSeconds = 3600;
+        private const int RememberMeRefreshTokenDays = 30;
+        private const int DefaultRefreshTokenDays = 0;
 
-        public RefreshTokenCommandHandler(
-            IRefreshTokenRepository refreshTokenRepository,
-            IUserRepository userRepository,
-            IJwtTokenGenerator jwtTokenGenerator,
-            IUnitOfWork unitOfWork) : base(unitOfWork)
+        public async Task<Result<RefreshTokenResult>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
         {
-            _refreshTokenRepository = refreshTokenRepository;
-            _userRepository = userRepository;
-            _jwtTokenGenerator = jwtTokenGenerator;
+            var refreshTokenResult = await GetAndValidateRefreshTokenAsync(request.RefreshToken);
+            if (refreshTokenResult.IsFailure)
+                return Result<RefreshTokenResult>.ValidationFailure(refreshTokenResult.Error);
+
+            var refreshToken = refreshTokenResult.Value;
+
+            var userValidationResult = await ValidateUserAsync(refreshToken.UserId, cancellationToken);
+            if (userValidationResult.IsFailure)
+                return Result<RefreshTokenResult>.ValidationFailure(userValidationResult.Error);
+
+            var user = userValidationResult.Value;
+
+            return await ExecuteTokenRefreshTransactionAsync(request.RefreshToken, user, refreshToken.IsRemember);
         }
 
-        public async Task<ErrorOr<RefreshTokenResult>> Handle(RefreshTokenCommand request, CancellationToken cancellationToken)
+        private async Task<Result<Domain.Model.User.RefreshToken>> GetAndValidateRefreshTokenAsync(string token)
         {
-            // Validate refresh token
-            var refreshToken = await _refreshTokenRepository.GetByTokenAsync(request.RefreshToken);
+            var refreshToken = await refreshTokenRepository.GetByTokenAsync(token);
+            var validationResult = await ValidateRefreshTokenAsync(refreshToken);
             
-            if (refreshToken == null)
-            {
-                return Error.NotFound("RefreshToken.NotFound", "Invalid refresh token");
-            }
+            if (validationResult.IsFailure)
+                return Result.Failure<Domain.Model.User.RefreshToken>(validationResult.Error);
 
-            if (refreshToken.IsRevoked)
-            {
-                return Error.Validation("RefreshToken.Revoked", "Refresh token has been revoked");
-            }
+            return Result.Success(refreshToken);
+        }
 
-            if (refreshToken.IsExpired)
+        private async Task<Result<RefreshTokenResult>> ExecuteTokenRefreshTransactionAsync(
+            string oldRefreshToken, 
+            Domain.Model.User.UserIdentity user, 
+            bool isRemember)
+        {
+            return (Result<RefreshTokenResult>)await ExecuteInTransactionAsync(async () =>
             {
-                return Error.Validation("RefreshToken.Expired", "Refresh token has expired");
-            }
+                var revokeResult = await RevokeOldRefreshTokenAsync(oldRefreshToken);
+                if (revokeResult.IsFailure)
+                    return revokeResult;
 
-            // Get user
-            var user = await _userRepository.GetByIdAsync(refreshToken.UserId, cancellationToken);
+                var newTokensResult = await GenerateNewTokensAsync(user, isRemember);
+                if (newTokensResult.IsFailure)
+                    return newTokensResult;
+
+                return CreateRefreshTokenResult(newTokensResult.Value);
+            });
+        }
+
+        private async Task<Result> RevokeOldRefreshTokenAsync(string refreshToken)
+        {
+            var revokeSuccess = await refreshTokenRepository.RevokeTokenAsync(refreshToken);
+            if (!revokeSuccess)
+                return Result.Failure(RefreshTokenErrors.RevokeFailed);
+
+            return Result.Success();
+        }
+
+        private Result<RefreshTokenResult> CreateRefreshTokenResult((string AccessToken, string RefreshToken) tokens)
+        {
+            return Result.Success(new RefreshTokenResult(
+                AccessToken: tokens.AccessToken,
+                RefreshToken: tokens.RefreshToken,
+                ExpireDate: AccessTokenExpirationSeconds));
+        }
+
+        private async Task<Result> ValidateRefreshTokenAsync(Domain.Model.User.RefreshToken token)
+        {
+            if (token == null)
+                return Result.Failure(RefreshTokenErrors.RefreshTokenNotFound);
+
+            if (token.IsRevoked)
+                return Result.Failure(RefreshTokenErrors.RefreshTokenRevoked);
+
+            if (token.IsExpired)
+                return Result.Failure(RefreshTokenErrors.RefreshTokenExpired);
+
+            return Result.Success();
+        }
+
+        private async Task<Result<Domain.Model.User.UserIdentity>> ValidateUserAsync(Guid userId, CancellationToken cancellationToken)
+        {
+            var user = await userRepository.GetByIdAsync(userId, cancellationToken);
             if (user == null)
-            {
-                return Error.NotFound("User.NotFound", "User not found");
-            }
+                return Result.Failure<Domain.Model.User.UserIdentity>(RefreshTokenErrors.UserNotFound);
 
             if (!user.IsActive)
-            {
-                return Error.Validation("User.Inactive", "User account is deactivated");
-            }
+                return Result.Failure<Domain.Model.User.UserIdentity>(RefreshTokenErrors.UserInactive);
 
-            // Execute in transaction
-            return await ExecuteInTransactionAsync(async () =>
-            {
-                // Revoke the old refresh token
-                var revokeSuccess = await _refreshTokenRepository.RevokeTokenAsync(request.RefreshToken);
-                if (!revokeSuccess)
-                {
-                    throw new InvalidOperationException("Failed to revoke old refresh token");
-                }
+            return Result.Success(user);
+        }
 
-                // Generate new access token
-                var accessToken = _jwtTokenGenerator.GenerateToken(
-                    id: user.Id,
-                    jti: Guid.NewGuid(), 
-                    permissions: new List<string>(),
-                    roles: new List<string>()
-                );
+        private async Task<Result<(string AccessToken, string RefreshToken)>> GenerateNewTokensAsync(
+            Domain.Model.User.UserIdentity user, 
+            bool isRemember)
+        {
+            var accessToken = GenerateAccessToken(user);
+            var refreshTokenResult = await CreateRefreshTokenAsync(user, isRemember);
+            
+            if (refreshTokenResult.IsFailure)
+                return Result.Failure<(string, string)>(refreshTokenResult.Error);
 
-                // Generate new refresh token
-                var newRefreshToken = Guid.NewGuid().ToString();
-                var newRefreshTokenExpiresAt = refreshToken.IsRemember 
-                    ? DateTime.UtcNow.AddDays(30)
-                    : DateTime.UtcNow.AddDays(0);
+            return Result.Success((accessToken, refreshTokenResult.Value));
+        }
 
-                // Create new refresh token record
-                var newRefreshTokenEntity = new Domain.Model.User.RefreshToken(
-                    id: Guid.NewGuid(),
-                    userId: user.Id,
-                    token: newRefreshToken,
-                    expiresAt: newRefreshTokenExpiresAt,
-                    isRemember: refreshToken.IsRemember);
+        private string GenerateAccessToken(Domain.Model.User.UserIdentity user)
+        {
+            return jwtTokenGenerator.GenerateToken(
+                id: user.Id,
+                jti: Guid.NewGuid(), 
+                permissions: new List<string>(),
+                roles: new List<string>()
+            );
+        }
 
-                var (createdToken, createSuccess) = await _refreshTokenRepository.AddAsync(newRefreshTokenEntity);
-                if (!createSuccess)
-                {
-                    throw new InvalidOperationException("Failed to create new refresh token");
-                }
+        private async Task<Result<string>> CreateRefreshTokenAsync(Domain.Model.User.UserIdentity user, bool isRemember)
+        {
+            var newRefreshToken = Guid.NewGuid().ToString();
+            var expirationDays = isRemember ? RememberMeRefreshTokenDays : DefaultRefreshTokenDays;
+            var newRefreshTokenExpiresAt = DateTime.UtcNow.AddDays(expirationDays);
 
-                return new RefreshTokenResult(
-                    AccessToken: accessToken,
-                    RefreshToken: createdToken.Token,
-                    ExpireDate: 3600);
-            });
+            var newRefreshTokenEntity = new Domain.Model.User.RefreshToken(
+                id: Guid.NewGuid(),
+                userId: user.Id,
+                token: newRefreshToken,
+                expiresAt: newRefreshTokenExpiresAt,
+                isRemember: isRemember);
+
+            var (createdToken, createSuccess) = await refreshTokenRepository.AddAsync(newRefreshTokenEntity);
+            if (!createSuccess)
+                return Result.Failure<string>(RefreshTokenErrors.CreateTokenFailed);
+
+            return Result.Success(createdToken.Token);
         }
     }
 } 

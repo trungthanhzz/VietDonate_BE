@@ -1,10 +1,4 @@
-﻿#nullable enable
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using VietDonate.Domain.Common;
+﻿using VietDonate.Domain.Common;
 
 namespace VietDonate.Domain.Model.User
 {
