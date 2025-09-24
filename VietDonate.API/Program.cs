@@ -2,6 +2,8 @@ using Asp.Versioning;
 using Asp.Versioning.ApiExplorer;
 using Microsoft.Extensions.Options;
 using Swashbuckle.AspNetCore.SwaggerGen;
+
+using VietDonate.API.Middlewares;
 using VietDonate.Application.Common.SwaggerExtension;
 using VietDonate.Infrastructure;
 using VietDonate.Application;
@@ -44,7 +46,11 @@ app.UseSwaggerUI(options =>
     }
 });
 
+app.UseCors("AllowAllOrigins");
+
 app.UseHttpsRedirection();
+
+app.UseMiddleware<CustomAuthenticationMiddleware>();
 
 app.UseAuthorization();
 

@@ -32,8 +32,27 @@ namespace VietDonate.Infrastructure
                 .AddAuthorization()
                 .AddMediator()
                 .AddPersistence(configuration)
-                .AddRepositories();
+                .AddRepositories()
+                .AddCors();
 
+            return services;
+        }
+
+        private static IServiceCollection AddCors(
+            this IServiceCollection services
+        )
+        {
+            services.AddCors(options =>
+                {
+                    options.AddPolicy(
+                        "AllowAllOrigins",
+                        builder => builder.WithOrigins("http://localhost:3000")
+                            .AllowAnyMethod()
+                            .AllowCredentials()
+                            .AllowAnyHeader()
+                    );
+                }
+            );
             return services;
         }
 

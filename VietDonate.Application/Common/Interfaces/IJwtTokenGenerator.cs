@@ -1,3 +1,5 @@
+using System.Security.Claims;
+
 namespace VietDonate.Application.Common.Interfaces;
 
 public interface IJwtTokenGenerator
@@ -9,4 +11,6 @@ public interface IJwtTokenGenerator
         string email,
         List<string> permissions,
         List<string> roles);
+    
+    ClaimsPrincipal GetPrincipalFromToken(string token);
 }

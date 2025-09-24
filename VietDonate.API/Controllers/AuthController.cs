@@ -26,6 +26,16 @@ namespace VietDonate.API.Controllers
                 IsRemember: request.IsRemember);
 
             var result = await mediator.Send(query);
+            
+            Response.Cookies.Append("jwt", result.Value.AccessToken, new CookieOptions
+            {
+                HttpOnly = true,
+                Secure = true,
+                SameSite = SameSiteMode.None,
+                Expires = DateTimeOffset.UtcNow.AddMinutes(15),
+                
+            });
+            
             return result.Match(
                 Ok,
                 Problem);
