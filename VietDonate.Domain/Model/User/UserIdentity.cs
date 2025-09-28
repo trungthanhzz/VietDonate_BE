@@ -15,7 +15,8 @@ namespace VietDonate.Domain.Model.User
         string passwordHash,
         bool isActive,
         string concurrenceStamp,
-        string securityStamp)
+        string securityStamp,
+        Guid roleId)
         : Entity(id)
     {
         public string UserName { get; } = userName;
@@ -27,6 +28,8 @@ namespace VietDonate.Domain.Model.User
         public DateTime CreatedDate { get; } = DateTime.UtcNow;
 
         public UserInformation? UserInformation { get; set; }
+        public Guid RoleId { get; set; } = roleId;
+        public Role Role { get; set; } = null!;
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
     }
 }

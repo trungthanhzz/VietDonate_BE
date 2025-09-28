@@ -10,7 +10,7 @@ public interface IJwtTokenGenerator
         string lastName,
         string email,
         List<string> permissions,
-        List<string> roles);
+        string roles);
     
     ClaimsPrincipal GetPrincipalFromToken(string token);
 }

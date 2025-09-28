@@ -18,6 +18,7 @@ namespace VietDonate.Infrastructure.Repositories
         {
             return await context.UserIdentities
                 .Include(u => u.UserInformation)
+                .Include(u => u.Role)
                 .FirstOrDefaultAsync(u => u.UserName == userName, cancellationToken);
         }
 

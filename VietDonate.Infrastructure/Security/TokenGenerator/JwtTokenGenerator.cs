@@ -17,7 +17,7 @@ public class JwtTokenGenerator(IOptions<JwtSettings> jwtOptions) : IJwtTokenGene
         string lastName,
         string email,
         List<string> permissions,
-        List<string> roles)
+        string role)
     {
         var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_jwtSettings.Secret));
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
@@ -30,7 +30,7 @@ public class JwtTokenGenerator(IOptions<JwtSettings> jwtOptions) : IJwtTokenGene
             new("id", id.ToString()),
         };
 
-        roles.ForEach(role => claims.Add(new(ClaimTypes.Role, role)));
+        claims.Add(new(ClaimTypes.Role, role));
         permissions.ForEach(permission => claims.Add(new("permissions", permission)));
 
         var token = new JwtSecurityToken(

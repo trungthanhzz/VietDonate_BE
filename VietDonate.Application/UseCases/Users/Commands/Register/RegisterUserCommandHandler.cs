@@ -4,6 +4,7 @@ using VietDonate.Application.Common.Interfaces.IRepository;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Domain.Model.User;
 using VietDonate.Application.Common.Handlers;
+using VietDonate.Domain.Common;
 
 namespace VietDonate.Application.UseCases.Users.Commands.Register
 {
@@ -11,14 +12,17 @@ namespace VietDonate.Application.UseCases.Users.Commands.Register
     {
         private readonly IUserRepository _userRepository;
         private readonly IPasswordHasher _passwordHasher;
+        private readonly IRoleRepository _roleRepository;
 
         public RegisterUserCommandHandler(
             IUserRepository userRepository,
             IPasswordHasher passwordHasher,
+            IRoleRepository roleRepository,
             IUnitOfWork unitOfWork) : base(unitOfWork)
         {
             _userRepository = userRepository;
             _passwordHasher = passwordHasher;
+            _roleRepository = roleRepository;
         }
 
         public async Task<ErrorOr<RegisterUserResult>> Handle(RegisterUserCommand command, CancellationToken cancellationToken)
@@ -58,7 +62,7 @@ namespace VietDonate.Application.UseCases.Users.Commands.Register
 
             // Generate a single ID for both entities
             var userId = Guid.NewGuid();
-
+            var userRoleId = await _roleRepository.GetRoleIdByNameAsync(Roles.User, cancellationToken);
             // Create UserIdentity
             var userIdentity = new UserIdentity(
                 id: userId,
@@ -66,6 +70,7 @@ namespace VietDonate.Application.UseCases.Users.Commands.Register
                 normalizedUserName: command.UserName.ToUpperInvariant(),
                 passwordHash: passwordHash,
                 isActive: true,
+                roleId: userRoleId,
                 concurrenceStamp: concurrenceStamp,
                 securityStamp: securityStamp
             );

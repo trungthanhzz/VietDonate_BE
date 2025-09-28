@@ -72,7 +72,7 @@ namespace VietDonate.Application.UseCases.Auths.Commands.RefreshToken
                     lastName: string.Empty,
                     email: user.UserInformation?.Email ?? string.Empty,
                     permissions: new List<string>(),
-                    roles: new List<string>()
+                    roles: user.Role.Name
                 );
 
                 // Generate new refresh token

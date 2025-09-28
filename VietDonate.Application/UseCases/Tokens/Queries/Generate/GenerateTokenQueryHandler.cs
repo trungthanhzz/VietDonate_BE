@@ -18,7 +18,7 @@ public class GenerateTokenQueryHandler(
             query.LastName,
             query.Email,
             query.Permissions,
-            query.Roles);
+            query.Role);
 
         var authResult = new GenerateTokenResult(
             id,

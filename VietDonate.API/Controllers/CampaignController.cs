@@ -15,7 +15,7 @@ public class CampaignController(
   // GET
   
   [HttpGet]
-  [Authorize]
+  [Authorize(Roles = "User")]
   public IActionResult GetCampaigns()
   {
     var context = HttpContext;

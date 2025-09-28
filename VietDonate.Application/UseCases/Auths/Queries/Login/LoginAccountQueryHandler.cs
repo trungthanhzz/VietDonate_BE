@@ -38,7 +38,7 @@ namespace VietDonate.Application.UseCases.Auths.Queries.Login
                 lastName: string.Empty,
                 email: user.UserInformation?.Email ?? string.Empty,
                 permissions: new List<string>(),
-                roles: new List<string>()
+                roles: user.Role.Name
             );
             
             // Bắt đầu transaction

@@ -48,6 +48,12 @@ namespace VietDonate.Infrastructure.ModelInfrastructure.Users.Persistence
                 .WithOne(ui => ui.UserIdentity)
                 .HasForeignKey<UserInformation>(ui => ui.Id)
                 .OnDelete(DeleteBehavior.Cascade);
+            
+            builder.HasOne(u => u.Role)
+                .WithMany()
+                .HasForeignKey(u => u.RoleId)
+                .OnDelete(DeleteBehavior.Restrict);
+                
         }
     }
 }

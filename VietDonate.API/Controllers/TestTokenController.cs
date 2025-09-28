@@ -25,7 +25,7 @@ namespace VietDonate.API.Controllers
                 request.LastName,
                 request.Email,
                 request.Permissions,
-                request.Roles);
+                request.Role);
 
             var result = await _mediator.Send(query);
             
