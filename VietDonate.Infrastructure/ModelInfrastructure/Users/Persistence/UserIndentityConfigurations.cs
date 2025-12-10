@@ -42,6 +42,10 @@ namespace VietDonate.Infrastructure.ModelInfrastructure.Users.Persistence
             builder.Property(u => u.CreatedDate)
                 .IsRequired();
 
+            builder.Property(u => u.RoleType)
+                .HasConversion<string>()
+                .HasMaxLength(10);
+
             builder.HasIndex(u => u.NormalizedUserName).IsUnique();
 
             builder.HasOne(u => u.UserInformation)
