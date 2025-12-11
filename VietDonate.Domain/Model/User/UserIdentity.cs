@@ -1,10 +1,4 @@
-﻿#nullable enable
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using VietDonate.Domain.Common;
+﻿using VietDonate.Domain.Common;
 
 namespace VietDonate.Domain.Model.User
 {
@@ -25,6 +19,7 @@ namespace VietDonate.Domain.Model.User
         public string ConcurrenceStamp { get; } = concurrenceStamp;
         public string SecurityStamp { get; } = securityStamp;
         public DateTime CreatedDate { get; } = DateTime.UtcNow;
+        public RoleType RoleType { get; set; } = RoleType.User;
 
         public UserInformation? UserInformation { get; set; }
         public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();

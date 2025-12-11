@@ -1,65 +1,72 @@
-using ErrorOr;
+using VietDonate.Application.Common.Constants;
 using VietDonate.Application.Common.Interfaces;
 using VietDonate.Application.Common.Interfaces.IRepository;
 using VietDonate.Application.Common.Mediator;
+using VietDonate.Application.Common.Result;
 using VietDonate.Domain.Model.User;
 using VietDonate.Application.Common.Handlers;
 
 namespace VietDonate.Application.UseCases.Users.Commands.Register
 {
-    public class RegisterUserCommandHandler : BaseCommandHandler, ICommandHandler<RegisterUserCommand, ErrorOr<RegisterUserResult>>
+    public class RegisterUserCommandHandler(
+        IUserRepository userRepository,
+        IPasswordHasher passwordHasher,
+        IUnitOfWork unitOfWork)
+        : BaseCommandHandler(unitOfWork),
+            ICommandHandler<RegisterUserCommand,
+                Result<RegisterUserResult>>
     {
-        private readonly IUserRepository _userRepository;
-        private readonly IPasswordHasher _passwordHasher;
-
-        public RegisterUserCommandHandler(
-            IUserRepository userRepository,
-            IPasswordHasher passwordHasher,
-            IUnitOfWork unitOfWork) : base(unitOfWork)
+        public async Task<Result<RegisterUserResult>> Handle(
+            RegisterUserCommand command,
+            CancellationToken cancellationToken)
         {
-            _userRepository = userRepository;
-            _passwordHasher = passwordHasher;
+            var validationResult = await ValidateRegistrationDataAsync(command, cancellationToken);
+            if (validationResult.IsFailure)
+                return Result<RegisterUserResult>.ValidationFailure(validationResult.Error);
+
+            var userEntities = CreateUserEntities(command);
+
+            return await ExecuteInTransactionAsync(async () =>
+            {
+                await userRepository.AddAsync(userEntities.UserIdentity, cancellationToken);
+
+                return Result.Success(new RegisterUserResult(
+                    UserId: userEntities.UserIdentity.Id,
+                    UserName: userEntities.UserIdentity.UserName,
+                    FullName: userEntities.UserInformation.FullName,
+                    Message: SuccessMessages.User.RegistrationSuccessful
+                ));
+            });
         }
 
-        public async Task<ErrorOr<RegisterUserResult>> Handle(RegisterUserCommand command, CancellationToken cancellationToken)
+        private async Task<Result> ValidateRegistrationDataAsync(RegisterUserCommand command, 
+            CancellationToken cancellationToken)
         {
-            // Validate that at least one contact method is provided
-            if (string.IsNullOrWhiteSpace(command.Phone) && string.IsNullOrWhiteSpace(command.Email))
-            {
-                return Error.Validation("User.Registration", "At least one contact method (phone or email) is required.");
-            }
+            if (string.IsNullOrWhiteSpace(command.Phone) && 
+                string.IsNullOrWhiteSpace(command.Email))
+                return Result.Failure(RegisterUserErrors.ContactMethodRequired);
 
-            // Check if username already exists
-            if (await _userRepository.UserNameExistsAsync(command.UserName, cancellationToken))
-            {
-                return Error.Conflict("User.Registration", "Username already exists.");
-            }
+            if (await userRepository.UserNameExistsAsync(command.UserName, cancellationToken))
+                return Result.Failure(RegisterUserErrors.UsernameExists);
 
-            // Check if email already exists (if provided)
-            if (!string.IsNullOrWhiteSpace(command.Email) && 
-                await _userRepository.EmailExistsAsync(command.Email, cancellationToken))
-            {
-                return Error.Conflict("User.Registration", "Email already exists.");
-            }
+            if (!string.IsNullOrWhiteSpace(command.Email) &&
+                await userRepository.EmailExistsAsync(command.Email, cancellationToken))
+                return Result.Failure(RegisterUserErrors.EmailExists);
 
-            // Check if phone already exists (if provided)
-            if (!string.IsNullOrWhiteSpace(command.Phone) && 
-                await _userRepository.PhoneExistsAsync(command.Phone, cancellationToken))
-            {
-                return Error.Conflict("User.Registration", "Phone number already exists.");
-            }
+            if (!string.IsNullOrWhiteSpace(command.Phone) &&
+                await userRepository.PhoneExistsAsync(command.Phone, cancellationToken))
+                return Result.Failure(RegisterUserErrors.PhoneExists);
 
-            // Hash the password
-            var passwordHash = _passwordHasher.HashPassword(command.Password);
+            return Result.Success();
+        }
 
-            // Generate security stamps
+        private (UserIdentity UserIdentity, UserInformation UserInformation) CreateUserEntities(RegisterUserCommand command)
+        {
+            var passwordHash = passwordHasher.HashPassword(command.Password);
             var securityStamp = Guid.NewGuid().ToString();
             var concurrenceStamp = Guid.NewGuid().ToString();
-
-            // Generate a single ID for both entities
             var userId = Guid.NewGuid();
 
-            // Create UserIdentity
             var userIdentity = new UserIdentity(
                 id: userId,
                 userName: command.UserName,
@@ -70,7 +77,6 @@ namespace VietDonate.Application.UseCases.Users.Commands.Register
                 securityStamp: securityStamp
             );
 
-            // Create UserInformation with the same ID
             var userInformation = new UserInformation(
                 id: userId,
                 fullName: command.FullName,
@@ -80,21 +86,10 @@ namespace VietDonate.Application.UseCases.Users.Commands.Register
                 avtUrl: string.Empty
             );
 
-            // Set up the relationship
             userIdentity.UserInformation = userInformation;
             userInformation.UserIdentity = userIdentity;
 
-            return await ExecuteInTransactionAsync(async () =>
-            {
-                await _userRepository.AddAsync(userIdentity, cancellationToken);
-                
-                return new RegisterUserResult(
-                    UserId: userIdentity.Id,
-                    UserName: userIdentity.UserName,
-                    FullName: userInformation.FullName,
-                    Message: "User registered successfully"
-                );
-            });
+            return (userIdentity, userInformation);
         }
     }
-} 
+}

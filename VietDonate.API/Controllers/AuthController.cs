@@ -1,8 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.AspNetCore.OutputCaching;
 using VietDonate.API.Common;
+using VietDonate.API.Utils.ExceptionHandler;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Infrastructure.ModelInfrastructure.Auths.Contracts;
 using VietDonate.Application.UseCases.Auths.Commands.RefreshToken;
@@ -27,20 +26,22 @@ namespace VietDonate.API.Controllers
 
             var result = await mediator.Send(query);
             return result.Match(
-                Ok,
-                Problem);
+                onSuccess: loginResult => Ok(loginResult),
+                onFailure: Problem
+            );
         }
 
         [HttpPost]
-        [Route("refresh")]
+        [Route("refresh-token")]
         [AllowAnonymous]
         public async Task<IActionResult> RefreshToken([FromBody] RefreshTokenRequest request)
         {
             var command = new RefreshTokenCommand(request.RefreshToken);
             var result = await mediator.Send(command);
             return result.Match(
-                Ok,
-                Problem);
+                onSuccess: refreshResult => Ok(refreshResult),
+                onFailure: Problem
+            );
         }
 
         [HttpPost]
@@ -51,11 +52,9 @@ namespace VietDonate.API.Controllers
             var command = new LogoutCommand(request.RefreshToken);
             var result = await mediator.Send(command);
             return result.Match(
-                Ok,
-                Problem);
+                onSuccess: logoutResult => Ok(logoutResult),
+                onFailure: Problem
+            );
         }
     }
-
-    public record RefreshTokenRequest(string RefreshToken);
-    public record LogoutRequest(string RefreshToken);
 }

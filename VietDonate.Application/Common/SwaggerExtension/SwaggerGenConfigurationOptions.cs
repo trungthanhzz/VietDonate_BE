@@ -23,7 +23,7 @@ namespace VietDonate.Application.Common.SwaggerExtension
                     description.GroupName,
                     new OpenApiInfo
                     {
-                        Title = "CrmMobile.API",
+                        Title = "VDS.API",
                         Version = description.ApiVersion.ToString()
                     });
             }

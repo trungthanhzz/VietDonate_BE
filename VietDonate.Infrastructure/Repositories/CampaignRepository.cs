@@ -1,6 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using VietDonate.Application.Common.Interfaces.IRepository;
-using VietDonate.Domain.Campaigns;
+using VietDonate.Domain.Model.Campaigns;
 using VietDonate.Infrastructure.Common.Persistance;
 
 namespace VietDonate.Infrastructure.Repositories

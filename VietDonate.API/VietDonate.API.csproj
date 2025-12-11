@@ -22,4 +22,6 @@
     <ProjectReference Include="..\VietDonate.Infrastructure\VietDonate.Infrastructure.csproj" />
   </ItemGroup>
 
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="https://www.schemastore.org/azure-deviceupdate-import-manifest-5.0.json" /></VisualStudio></ProjectExtensions>
+
 </Project>

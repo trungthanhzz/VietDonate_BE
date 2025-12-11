@@ -1,11 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Microsoft.AspNetCore.Http;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using VietDonate.Infrastructure.Common.Mediator;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Infrastructure.Common.Persistance;
@@ -17,6 +11,10 @@ using VietDonate.Infrastructure.Security.TokenGenerator;
 using VietDonate.Infrastructure.Configurations;
 using VietDonate.Application.Common.Interfaces.IRepository;
 using VietDonate.Infrastructure.Repositories;
+using VietDonate.Infrastructure.Common.Redis;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Caching.StackExchangeRedis;
+using VietDonate.Infrastructure.Common.Middleware;
 
 namespace VietDonate.Infrastructure
 {
@@ -32,7 +30,16 @@ namespace VietDonate.Infrastructure
                 .AddAuthorization()
                 .AddMediator()
                 .AddPersistence(configuration)
-                .AddRepositories();
+                .AddRepositories()
+                .AddRedis(configuration)
+                .AddJwtBlacklist(options =>
+                {
+                    options.EnableBlacklistCheck = true;
+                    options.ExcludedPaths = new[] { "/swagger", "/health", "/api/auth/login", "/api/auth/register" };
+                    options.ExcludedMethods = new[] { "OPTIONS" };
+                    options.LogBlockedRequests = true;
+                    options.BlacklistKeyPrefix = "bl:acc:";
+                });
 
             return services;
         }
@@ -40,6 +47,7 @@ namespace VietDonate.Infrastructure
         private static IServiceCollection AddConfigurations(this IServiceCollection services, IConfiguration configuration)
         {
             services.Configure<DbConfig>(configuration.GetSection(nameof(DbConfig)));
+            services.Configure<RedisConfig>(configuration.GetSection(nameof(RedisConfig)));
             return services;
         }
 
@@ -48,6 +56,8 @@ namespace VietDonate.Infrastructure
             services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.Section));
 
             services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
+            
+            services.AddHttpContextAccessor();
 
             services
                 .ConfigureOptions<JwtBearerTokenValidationConfiguration>()
@@ -64,7 +74,6 @@ namespace VietDonate.Infrastructure
 
         private static IServiceCollection AddBackgroundServices(this IServiceCollection services, IConfiguration configuration)
         {
-
             return services;
         }
 
@@ -81,11 +90,13 @@ namespace VietDonate.Infrastructure
 
         private static IServiceCollection AddRepositories(this IServiceCollection services)
         {
+            services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ICampaignRepository, CampaignRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             services.AddScoped<IPasswordHasher, VietDonate.Infrastructure.Security.PasswordHasher.PasswordHasher>();
-            services.AddScoped<IUnitOfWork, UnitOfWork>();
+            services.AddTransient<VietDonate.Application.Common.Interfaces.IRequestContextService, VietDonate.Infrastructure.Common.RequestContextService>();
+            
             return services;
         }
 
@@ -97,5 +108,29 @@ namespace VietDonate.Infrastructure
             return services;
         }
 
+        public static IServiceCollection AddRedis(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<RedisConfig>(configuration.GetSection(nameof(RedisConfig)));
+            
+            var redisConfig = new RedisConfig();
+            configuration.GetSection(nameof(RedisConfig)).Bind(redisConfig);
+            
+            if (!string.IsNullOrEmpty(redisConfig.ConnectionString))
+            {
+                services.AddStackExchangeRedisCache(options =>
+                {
+                    options.Configuration = redisConfig.ConnectionString;
+                    options.InstanceName = redisConfig.InstanceName;
+                });
+            }
+            else
+            {
+                services.AddDistributedMemoryCache();
+            }
+            
+            services.AddSingleton<IRedisService, VietDonate.Infrastructure.Common.Redis.RedisService>();
+            services.AddScoped<IRefreshTokenCacheService, VietDonate.Infrastructure.Common.Redis.RefreshTokenCacheService>();
+            return services;
+        }
     }
 }

@@ -5,6 +5,7 @@ using Swashbuckle.AspNetCore.SwaggerGen;
 using VietDonate.Application.Common.SwaggerExtension;
 using VietDonate.Infrastructure;
 using VietDonate.Application;
+using VietDonate.Infrastructure.Common.Middleware;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -29,6 +30,17 @@ services
     .AddApplication()
     .AddInfrastructure(configuration);
 services.AddControllers();
+
+services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins(configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:3000", "http://localhost:5173" })
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
 var app = builder.Build();
 
 app.UseSwagger(c =>
@@ -44,8 +56,14 @@ app.UseSwaggerUI(options =>
     }
 });
 
+
+
 app.UseHttpsRedirection();
 
+app.UseCors();
+
+app.UseAuthentication();
+app.UseJwtBlacklist();
 app.UseAuthorization();
 
 app.MapControllers();

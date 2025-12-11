@@ -1,5 +1,5 @@
-using ErrorOr;
 using VietDonate.Application.Common.Mediator;
+using VietDonate.Application.Common.Result;
 
 namespace VietDonate.Application.UseCases.Users.Commands.Register
 {
@@ -10,5 +10,5 @@ namespace VietDonate.Application.UseCases.Users.Commands.Register
         string Phone,
         string Email,
         string Address
-    ) : ICommand<ErrorOr<RegisterUserResult>>;
+    ) : ICommand<Result<RegisterUserResult>>;
 } 

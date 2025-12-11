@@ -1,10 +1,5 @@
-﻿using ErrorOr;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using VietDonate.Application.Common.Mediator;
+﻿using VietDonate.Application.Common.Mediator;
+using VietDonate.Application.Common.Result;
 
 namespace VietDonate.Application.UseCases.Auths.Queries.Login
 {
@@ -12,5 +7,5 @@ namespace VietDonate.Application.UseCases.Auths.Queries.Login
         string UserName,
         string Password,
         bool IsRemember = false)
-        : IQuery<ErrorOr<LoginResult>>;
+        : IQuery<Result<LoginResult>>;
 }

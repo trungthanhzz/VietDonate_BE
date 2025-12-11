@@ -37,7 +37,6 @@ namespace VietDonate.Infrastructure.Repositories
 
         public async Task AddAsync(UserIdentity userIdentity, CancellationToken cancellationToken)
         {
-            // Add both UserIdentity and UserInformation
             await context.UserIdentities.AddAsync(userIdentity, cancellationToken);
             await context.UserInformations.AddAsync(userIdentity.UserInformation, cancellationToken);
             await context.SaveChangesAsync(cancellationToken);
