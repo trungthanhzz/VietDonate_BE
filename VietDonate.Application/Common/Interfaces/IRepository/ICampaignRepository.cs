@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using VietDonate.Domain.Campaigns;
+using VietDonate.Domain.Model.Campaigns;
 
 namespace VietDonate.Application.Common.Interfaces.IRepository
 {

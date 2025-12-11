@@ -1,6 +1,6 @@
 using Microsoft.EntityFrameworkCore;
-using VietDonate.Domain.Campaigns;
 using VietDonate.Domain.Common;
+using VietDonate.Domain.Model.Campaigns;
 using VietDonate.Domain.Model.User;
 
 namespace VietDonate.Infrastructure.Common.Persistance;

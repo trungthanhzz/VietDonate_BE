@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Campaigns\Event\" />
+    <Folder Include="Model\Campaigns\Event\" />
   </ItemGroup>
 
 </Project>
