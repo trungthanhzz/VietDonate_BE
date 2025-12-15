@@ -4,5 +4,5 @@ using VietDonate.Domain.Model.Campaigns;
 
 namespace VietDonate.Application.UseCases.Campaigns.Queries.GetCampaign
 {
-    public record GetCampaignQuery(string CampaignId) : IQuery<Result<Campaign>>;
+    public record GetCampaignQuery(Guid CampaignId) : IQuery<Result<Campaign>>;
 }

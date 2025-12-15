@@ -6,7 +6,7 @@ namespace VietDonate.Application.Common.Result
     {
         public bool IsSuccess { get; }
         public bool IsFailure => !IsSuccess;
-        public Error? Error { get; }
+        public Error Error { get; }
         protected Result(bool isSuccess, Error? error)
         {
             if (isSuccess && error != null && error != Error.None)

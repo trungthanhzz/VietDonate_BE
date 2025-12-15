@@ -10,7 +10,7 @@ namespace VietDonate.Domain.Model.Campaigns
         public DateTime CreatedDate { get; }
 
         public string ShortDescription { get; set; } = null!;
-        public string? FullStory { get; set; }
+        public string FullStory { get; set; }
         public decimal? TargetAmount { get; set; }
         public decimal? CurrentAmount { get; set; }
         public string Type { get; set; } = null!;
@@ -24,9 +24,9 @@ namespace VietDonate.Domain.Model.Campaigns
         public DateTime? EndTime { get; set; }
         public DateTime? ApprovedTime { get; set; }
         public DateTime? CompletedTime { get; set; }
-        public string? VerificationNote { get; set; }
-        public string? RejectionReason { get; set; }
-        public string? FactCheckNote { get; set; }
+        public string VerificationNote { get; set; }
+        public string RejectionReason { get; set; }
+        public string FactCheckNote { get; set; }
         public int ViewCount { get; set; } = 0;
         public int DonorCount { get; set; } = 0;
         public DateTime? CreateTime { get; set; }
