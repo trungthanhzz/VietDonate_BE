@@ -4,6 +4,7 @@ using VietDonate.API.Common;
 using VietDonate.API.Utils.ExceptionHandler;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Application.UseCases.Users.Commands.Register;
+using VietDonate.Application.UseCases.Users.Queries.GetUserProfile;
 using VietDonate.Infrastructure.ModelInfrastructure.Users.Contracts;
 
 namespace VietDonate.API.Controllers
@@ -34,6 +35,18 @@ namespace VietDonate.API.Controllers
             var result = await mediator.Send(command);
             return result.Match(
                 onSuccess: registerResult => Ok(registerResult),
+                onFailure: Problem
+            );
+        }
+
+        [HttpGet]
+        [Route("profile")]
+        public async Task<IActionResult> GetProfile()
+        {
+            var query = new GetUserProfileQuery();
+            var result = await mediator.Send(query);
+            return result.Match(
+                onSuccess: profileResult => Ok(profileResult),
                 onFailure: Problem
             );
         }
