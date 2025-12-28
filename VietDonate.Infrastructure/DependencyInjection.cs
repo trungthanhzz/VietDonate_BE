@@ -32,6 +32,7 @@ namespace VietDonate.Infrastructure
                 .AddPersistence(configuration)
                 .AddRepositories()
                 .AddRedis(configuration)
+                .AddS3FileStorage(configuration)
                 .AddJwtBlacklist(options =>
                 {
                     options.EnableBlacklistCheck = true;
@@ -130,6 +131,14 @@ namespace VietDonate.Infrastructure
             
             services.AddSingleton<IRedisService, VietDonate.Infrastructure.Common.Redis.RedisService>();
             services.AddScoped<IRefreshTokenCacheService, VietDonate.Infrastructure.Common.Redis.RefreshTokenCacheService>();
+            return services;
+        }
+        
+        public static IServiceCollection AddS3FileStorage(this IServiceCollection services, IConfiguration configuration)
+        {
+            services.Configure<S3Config>(configuration.GetSection(nameof(S3Config)));
+            services.AddAWSService<Amazon.S3.IAmazonS3>();
+            services.AddScoped<VietDonate.Application.Common.Interfaces.IService.IFileStorageService, Common.S3.S3FileStorageService>();
             return services;
         }
     }
