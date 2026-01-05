@@ -4,7 +4,6 @@ using VietDonate.Application.Common.Mediator;
 using VietDonate.Application.Common.Result;
 using VietDonate.Domain.Model.User;
 
-
 namespace VietDonate.Application.UseCases.Auths.Queries.Login
 {
     public class LoginAccountQueryHandler(
@@ -85,10 +84,13 @@ namespace VietDonate.Application.UseCases.Auths.Queries.Login
 
                 await unitOfWork.CommitAsync();
 
+                // Calculate access token expiration in seconds
+                var accessTokenExpirationSeconds = jwtTokenGenerator.GetAccessTokenExpirationInMinutes() * 60;
+
                 return Result.Success(new LoginResult(
                     AccessToken: accessToken,
                     RefreshToken: createdToken.Token,
-                    ExpireDate: 3600));
+                    ExpireDate: accessTokenExpirationSeconds));
             }
             catch (Exception ex)
             {

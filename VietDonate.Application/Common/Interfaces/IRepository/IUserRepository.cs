@@ -10,6 +10,15 @@ namespace VietDonate.Application.Common.Interfaces.IRepository
         Task<UserIdentity?> GetByPhoneAsync(string phone, CancellationToken cancellationToken);
         Task AddAsync(UserIdentity userIdentity, CancellationToken cancellationToken);
         Task UpdateAsync(UserIdentity userIdentity, CancellationToken cancellationToken);
+        Task UpdateUserInformationPropertiesAsync(
+            UserInformation userInformation,
+            string? fullName,
+            string? phone,
+            string? email,
+            string? address,
+            string? avtUrl,
+            CancellationToken cancellationToken);
+        Task UpdatePasswordAsync(UserIdentity userIdentity, string newPasswordHash, CancellationToken cancellationToken);
         Task<bool> UserNameExistsAsync(string userName, CancellationToken cancellationToken);
         Task<bool> EmailExistsAsync(string email, CancellationToken cancellationToken);
         Task<bool> PhoneExistsAsync(string phone, CancellationToken cancellationToken);

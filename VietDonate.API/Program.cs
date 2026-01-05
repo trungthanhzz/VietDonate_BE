@@ -6,6 +6,7 @@ using VietDonate.Application.Common.SwaggerExtension;
 using VietDonate.Infrastructure;
 using VietDonate.Application;
 using VietDonate.Infrastructure.Common.Middleware;
+using VietDonate.API.Utils.ExceptionHandler;
 
 var builder = WebApplication.CreateBuilder(args);
 var services = builder.Services;
@@ -31,11 +32,14 @@ services
     .AddInfrastructure(configuration);
 services.AddControllers();
 
+services.AddExceptionHandler<CustomExceptionHandler>();
+services.AddProblemDetails();
+
 services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:3000", "http://localhost:5173" })
+        policy.WithOrigins(configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:3000", "http://localhost:5173", "http://localhost:3002" })
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -57,6 +61,9 @@ app.UseSwaggerUI(options =>
 });
 
 
+
+// Use exception handler (must be early in the pipeline)
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 

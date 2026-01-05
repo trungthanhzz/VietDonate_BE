@@ -1,3 +1,4 @@
+using System.Reflection;
 using Microsoft.EntityFrameworkCore;
 using VietDonate.Domain.Common;
 using VietDonate.Domain.Model.CampaignCategories;
@@ -36,6 +37,43 @@ public class AppDbContext(DbContextOptions<AppDbContext> options) : DbContext(op
 
     public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
+        // Ensure all DateTime values have Kind=UTC for PostgreSQL compatibility
+        foreach (var entry in ChangeTracker.Entries())
+        {
+            if (entry.State == EntityState.Detached)
+                continue;
+
+            // Process all properties in ChangeTracker (this handles all properties including get-only ones)
+            foreach (var property in entry.Properties)
+            {
+                // Check if property is DateTime or DateTime?
+                var clrType = property.Metadata.ClrType;
+                var underlyingType = Nullable.GetUnderlyingType(clrType) ?? clrType;
+                
+                if (underlyingType == typeof(DateTime))
+                {
+                    if (property.CurrentValue != null && property.CurrentValue is DateTime dateTime)
+                    {
+                        if (dateTime.Kind != DateTimeKind.Utc)
+                        {
+                            DateTime utcDateTime;
+                            if (dateTime.Kind == DateTimeKind.Local)
+                            {
+                                utcDateTime = dateTime.ToUniversalTime();
+                            }
+                            else
+                            {
+                                // For Unspecified, assume it's already in UTC and just specify the kind
+                                utcDateTime = DateTime.SpecifyKind(dateTime, DateTimeKind.Utc);
+                            }
+                            
+                            property.CurrentValue = utcDateTime;
+                        }
+                    }
+                }
+            }
+        }
+        
         return await base.SaveChangesAsync(cancellationToken);
     }
 

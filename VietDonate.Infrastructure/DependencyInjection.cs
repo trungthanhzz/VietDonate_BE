@@ -11,9 +11,6 @@ using VietDonate.Infrastructure.Security.TokenGenerator;
 using VietDonate.Infrastructure.Configurations;
 using VietDonate.Application.Common.Interfaces.IRepository;
 using VietDonate.Infrastructure.Repositories;
-using VietDonate.Infrastructure.Common.Redis;
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Caching.StackExchangeRedis;
 using VietDonate.Infrastructure.Common.Middleware;
 
 namespace VietDonate.Infrastructure
@@ -48,21 +45,45 @@ namespace VietDonate.Infrastructure
         {
             services.Configure<DbConfig>(configuration.GetSection(nameof(DbConfig)));
             services.Configure<RedisConfig>(configuration.GetSection(nameof(RedisConfig)));
+            services.Configure<CookieConfig>(configuration.GetSection(CookieConfig.Section));
             return services;
         }
 
         private static IServiceCollection AddAuthentication(this IServiceCollection services, IConfiguration configuration)
         {
             services.Configure<JwtSettings>(configuration.GetSection(JwtSettings.Section));
+            services.Configure<CookieConfig>(configuration.GetSection(CookieConfig.Section));
 
             services.AddSingleton<IJwtTokenGenerator, JwtTokenGenerator>();
             
             services.AddHttpContextAccessor();
 
+            var cookieConfig = configuration.GetSection(CookieConfig.Section).Get<CookieConfig>() ?? new CookieConfig();
+            
             services
                 .ConfigureOptions<JwtBearerTokenValidationConfiguration>()
                 .AddAuthentication(defaultScheme: JwtBearerDefaults.AuthenticationScheme)
-                .AddJwtBearer();
+                .AddJwtBearer()
+                .AddCookie(options =>
+                {
+                    options.Cookie.Name = cookieConfig.AccessTokenCookieName;
+                    options.Cookie.HttpOnly = cookieConfig.HttpOnly;
+                    options.Cookie.SecurePolicy = cookieConfig.Secure 
+                        ? Microsoft.AspNetCore.Http.CookieSecurePolicy.Always 
+                        : Microsoft.AspNetCore.Http.CookieSecurePolicy.SameAsRequest;
+                    options.Cookie.SameSite = cookieConfig.SameSite switch
+                    {
+                        "None" => Microsoft.AspNetCore.Http.SameSiteMode.None,
+                        "Lax" => Microsoft.AspNetCore.Http.SameSiteMode.Lax,
+                        "Strict" => Microsoft.AspNetCore.Http.SameSiteMode.Strict,
+                        _ => Microsoft.AspNetCore.Http.SameSiteMode.None
+                    };
+                    options.Cookie.Path = cookieConfig.Path;
+                    if (!string.IsNullOrEmpty(cookieConfig.Domain))
+                    {
+                        options.Cookie.Domain = cookieConfig.Domain;
+                    }
+                });
 
             return services;
         }
@@ -79,6 +100,10 @@ namespace VietDonate.Infrastructure
 
         private static IServiceCollection AddPersistence(this IServiceCollection services, IConfiguration configuration)
         {
+            // Enable legacy timestamp behavior for Npgsql to handle DateTime with Kind=Unspecified
+            // This allows Npgsql to accept DateTime values without explicit UTC kind
+            AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+            
             services.AddDbContext<AppDbContext>((serviceProvider, options) =>
             {
                 var dbConfig = serviceProvider.GetRequiredService<Microsoft.Extensions.Options.IOptions<DbConfig>>().Value;

@@ -3,7 +3,6 @@ using VietDonate.Application.Common.Interfaces.IRepository;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Application.Common.Handlers;
 using VietDonate.Application.Common.Result;
-using VietDonate.Domain.Model.User;
 
 namespace VietDonate.Application.UseCases.Auths.Commands.RefreshToken
 {
@@ -14,7 +13,6 @@ namespace VietDonate.Application.UseCases.Auths.Commands.RefreshToken
         IUnitOfWork unitOfWork)
         : BaseCommandHandler(unitOfWork), ICommandHandler<RefreshTokenCommand, Result<RefreshTokenResult>>
     {
-        private const int AccessTokenExpirationSeconds = 3600;
         private const int RememberMeRefreshTokenDays = 30;
         private const int DefaultRefreshTokenDays = 0;
 
@@ -76,10 +74,12 @@ namespace VietDonate.Application.UseCases.Auths.Commands.RefreshToken
 
         private Result<RefreshTokenResult> CreateRefreshTokenResult((string AccessToken, string RefreshToken) tokens)
         {
+            var accessTokenExpirationSeconds = jwtTokenGenerator.GetAccessTokenExpirationInMinutes() * 60;
+            
             return Result.Success(new RefreshTokenResult(
                 AccessToken: tokens.AccessToken,
                 RefreshToken: tokens.RefreshToken,
-                ExpireDate: AccessTokenExpirationSeconds));
+                ExpireDate: accessTokenExpirationSeconds));
         }
 
         private async Task<Result> ValidateRefreshTokenAsync(Domain.Model.User.RefreshToken token)
