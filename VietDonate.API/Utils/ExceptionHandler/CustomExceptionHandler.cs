@@ -4,13 +4,15 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace VietDonate.API.Utils.ExceptionHandler
 {
-    public class CustomExceptionHandler(IProblemDetailsService problemDetailsService) : IExceptionHandler
+    public class CustomExceptionHandler(IProblemDetailsService problemDetailsService, ILogger<CustomExceptionHandler> logger) : IExceptionHandler
     {
         public async ValueTask<bool> TryHandleAsync(
             HttpContext httpContext,
             Exception exception,
             CancellationToken cancellationToken)
         {
+            logger.LogError(exception, "An unhandled exception occurred: {Message}", exception.Message);
+
             var statusCode = exception switch
             {
                 ArgumentException or ArgumentNullException or InvalidOperationException => StatusCodes.Status400BadRequest,

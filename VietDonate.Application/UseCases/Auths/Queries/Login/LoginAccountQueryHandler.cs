@@ -3,6 +3,7 @@ using VietDonate.Application.Common.Interfaces.IRepository;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Application.Common.Result;
 using VietDonate.Domain.Model.User;
+using Microsoft.Extensions.Logging;
 
 namespace VietDonate.Application.UseCases.Auths.Queries.Login
 {
@@ -11,17 +12,28 @@ namespace VietDonate.Application.UseCases.Auths.Queries.Login
         IPasswordHasher passwordHasher,
         IJwtTokenGenerator jwtTokenGenerator,
         IRefreshTokenRepository refreshTokenRepository,
-        IUnitOfWork unitOfWork) : IQueryHandler<LoginAccountQuery, Result<LoginResult>>
+        IUnitOfWork unitOfWork,
+        ILogger<LoginAccountQueryHandler> logger) : IQueryHandler<LoginAccountQuery, Result<LoginResult>>
     {
         public async Task<Result<LoginResult>> Handle(LoginAccountQuery query, CancellationToken cancellationToken)
         {
+            logger.LogInformation("Attempting login for user: {UserName}", query.UserName);
+
             var user = await GetUserByUsernameAsync(query.UserName, cancellationToken);
             if (user.IsFailure)
+            {
+                logger.LogWarning("Login failed for user {UserName}: User not found", query.UserName);
                 return Result.Failure<LoginResult>(user.Error);
+            }
 
             var validationResult = ValidateUserCredentials(user.Value, query.Password);
             if (validationResult.IsFailure)
+            {
+                logger.LogWarning("Login failed for user {UserName}: Invalid credentials", query.UserName);
                 return Result.Failure<LoginResult>(validationResult.Error);
+            }
+
+            logger.LogInformation("User {UserName} logged in successfully", query.UserName);
 
             var accessToken = jwtTokenGenerator.GenerateToken(
                 id: user.Value.Id,

@@ -7,11 +7,35 @@ using VietDonate.Infrastructure;
 using VietDonate.Application;
 using VietDonate.Infrastructure.Common.Middleware;
 using VietDonate.API.Utils.ExceptionHandler;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Logger(lc => lc
+        .Filter.ByExcluding(logEvent =>
+        {
+            var sourceContext = logEvent.Properties.ContainsKey("SourceContext")
+                ? logEvent.Properties["SourceContext"].ToString()
+                : "";
+            
+            return sourceContext.Contains("NHibernate.SQL") ||
+                   sourceContext.Contains("NHibernate") ||
+                   sourceContext.Contains("Microsoft.EntityFrameworkCore.Database.Command") ||
+                   sourceContext.Contains("Microsoft.EntityFrameworkCore.Query");
+        })
+        .WriteTo.File(
+            path: "logs/log-.txt",
+            rollingInterval: RollingInterval.Day,
+            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+            retainedFileCountLimit: 30))
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 var services = builder.Services;
 var configuration = builder.Configuration;
-// Add services to the container.
 
 services.AddApiVersioning(options =>
 {
