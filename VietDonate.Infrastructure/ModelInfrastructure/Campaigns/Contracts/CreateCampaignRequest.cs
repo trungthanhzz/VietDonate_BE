@@ -25,8 +25,8 @@ namespace VietDonate.Infrastructure.ModelInfrastructure.Campaigns.Contracts
         [StringLength(50, ErrorMessage = "Urgency level cannot exceed 50 characters")]
         string UrgencyLevel,
         
-        bool AllowComment = true,
-        bool AllowDonate = true,
+        bool AllowComment,
+        bool AllowDonate,
         
         string? TargetItems,
         DateTime? StartTime,
