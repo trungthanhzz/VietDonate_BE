@@ -21,5 +21,12 @@ namespace VietDonate.Application.Common.Constants
             public const string UserCreated = "User created successfully";
             public const string UpdateSuccessful = "User updated successfully";
         }
+
+        public static class Campaign
+        {
+            public const string CreatedSuccessfully = "Campaign created successfully";
+            public const string UpdatedSuccessfully = "Campaign updated successfully";
+            public const string DeletedSuccessfully = "Campaign deleted successfully";
+        }
     }
 }

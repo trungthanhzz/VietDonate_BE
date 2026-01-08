@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Options;
 using VietDonate.API.Common;
 using VietDonate.API.Utils.ExceptionHandler;
+using VietDonate.Application.Common.Constants;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Infrastructure.ModelInfrastructure.Auths.Contracts;
 using VietDonate.Application.UseCases.Auths.Commands.RefreshToken;
@@ -64,7 +65,7 @@ namespace VietDonate.API.Controllers
 
         [HttpPost]
         [Route("logout")]
-        [Authorize]
+        [Authorize(Policy = AuthorizationPolicies.RequireUser)]
         public async Task<IActionResult> Logout([FromBody] LogoutRequest request)
         {
             var command = new LogoutCommand(request.RefreshToken);
@@ -81,7 +82,7 @@ namespace VietDonate.API.Controllers
 
         [HttpPost]
         [Route("change-password")]
-        [Authorize]
+        [Authorize(Policy = AuthorizationPolicies.RequireUser)]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
         {
             var command = new ChangePasswordCommand(

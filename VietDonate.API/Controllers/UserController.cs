@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using VietDonate.API.Common;
 using VietDonate.API.Utils.ExceptionHandler;
+using VietDonate.Application.Common.Constants;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Application.UseCases.Users.Commands.Register;
 using VietDonate.Application.UseCases.Users.Commands.UpdateUser;
@@ -42,7 +43,7 @@ namespace VietDonate.API.Controllers
         }
 
         [HttpGet]
-        [Authorize]
+        [Authorize(Policy = AuthorizationPolicies.RequireUser)]
         [Route("profile")]
         public async Task<IActionResult> GetProfile()
         {
@@ -55,7 +56,7 @@ namespace VietDonate.API.Controllers
         }
 
         [HttpPut]
-        [Authorize]
+        [Authorize(Policy = AuthorizationPolicies.RequireUser)]
         [Route("profile")]
         public async Task<IActionResult> UpdateUser([FromBody] UpdateUserRequest request)
         {
@@ -92,7 +93,7 @@ namespace VietDonate.API.Controllers
         }
 
         [HttpPatch]
-        [Authorize]
+        [Authorize(Policy = AuthorizationPolicies.RequireUser)]
         [Route("profile")]
         public async Task<IActionResult> UpdateUserPartial([FromBody] UpdateUserPartialRequest request)
         {

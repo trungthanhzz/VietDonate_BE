@@ -39,7 +39,7 @@ namespace VietDonate.Application.UseCases.Auths.Queries.Login
                 id: user.Value.Id,
                 jti: Guid.NewGuid(),
                 permissions: new List<string>(),
-                roles: new List<string>()
+                roles: new List<string> { user.Value.RoleType.ToString() }
             );
 
             return await CreateRefreshTokenInTransactionAsync(user.Value, query.IsRemember, accessToken);

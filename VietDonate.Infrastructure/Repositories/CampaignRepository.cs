@@ -24,6 +24,11 @@ namespace VietDonate.Infrastructure.Repositories
             return await _context.Campaigns.FindAsync(userId, cancellationToken);
         }
 
+        public async Task<List<Campaign>> GetAllAsync(CancellationToken cancellationToken)
+        {
+            return await _context.Campaigns.ToListAsync(cancellationToken);
+        }
+
         public async Task RemoveAsync(Campaign user, CancellationToken cancellationToken)
         {
             _context.Remove(user);

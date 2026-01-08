@@ -12,6 +12,8 @@ using VietDonate.Infrastructure.Configurations;
 using VietDonate.Application.Common.Interfaces.IRepository;
 using VietDonate.Infrastructure.Repositories;
 using VietDonate.Infrastructure.Common.Middleware;
+using VietDonate.Domain.Common;
+using VietDonate.Application.Common.Constants;
 
 namespace VietDonate.Infrastructure
 {
@@ -90,6 +92,14 @@ namespace VietDonate.Infrastructure
 
         private static IServiceCollection AddAuthorization(this IServiceCollection services)
         {
+            services.AddAuthorizationBuilder()
+                .AddPolicy(AuthorizationPolicies.RequireAdmin, policy => 
+                    policy.RequireRole(nameof(RoleType.Admin)))
+                .AddPolicy(AuthorizationPolicies.RequireStaff, policy => 
+                    policy.RequireRole(nameof(RoleType.Admin), nameof(RoleType.Staff)))
+                .AddPolicy(AuthorizationPolicies.RequireUser, policy => 
+                    policy.RequireRole(nameof(RoleType.Admin), nameof(RoleType.Staff), nameof(RoleType.User)));
+            
             return services;
         }
 

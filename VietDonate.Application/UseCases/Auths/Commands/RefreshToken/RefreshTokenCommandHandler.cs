@@ -127,7 +127,7 @@ namespace VietDonate.Application.UseCases.Auths.Commands.RefreshToken
                 id: user.Id,
                 jti: Guid.NewGuid(), 
                 permissions: new List<string>(),
-                roles: new List<string>()
+                roles: new List<string> { user.RoleType.ToString() }
             );
         }
 
