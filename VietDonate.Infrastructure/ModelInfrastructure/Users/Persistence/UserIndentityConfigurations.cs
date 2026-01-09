@@ -43,8 +43,7 @@ namespace VietDonate.Infrastructure.ModelInfrastructure.Users.Persistence
                 .IsRequired();
 
             builder.Property(u => u.RoleType)
-                .HasConversion<string>()
-                .HasMaxLength(10);
+                .HasMaxLength(50);
 
             builder.HasIndex(u => u.NormalizedUserName).IsUnique();
 
