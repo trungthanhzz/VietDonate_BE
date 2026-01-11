@@ -20,6 +20,7 @@ namespace VietDonate.Application.Common.Constants
             public const string RegistrationSuccessful = "User registered successfully";
             public const string UserCreated = "User created successfully";
             public const string UpdateSuccessful = "User updated successfully";
+            public const string RoleUpdateSuccessful = "User role updated successfully";
         }
 
         public static class Campaign

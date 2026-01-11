@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VietDonate.Application.Common.Interfaces.IRepository;
+using VietDonate.Domain.Common;
 using VietDonate.Domain.Model.User;
 using VietDonate.Infrastructure.Common.Persistance;
 
@@ -97,6 +98,16 @@ namespace VietDonate.Infrastructure.Repositories
             await context.SaveChangesAsync(cancellationToken);
         }
 
+        public async Task UpdateRoleAsync(UserIdentity userIdentity, RoleType newRole, CancellationToken cancellationToken)
+        {
+            var entry = context.Entry(userIdentity);
+            entry.State = EntityState.Modified;
+            
+            entry.Property(nameof(UserIdentity.RoleType)).CurrentValue = newRole;
+            
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
         public async Task<bool> UserNameExistsAsync(string userName, CancellationToken cancellationToken)
         {
             return await context.UserIdentities
@@ -113,6 +124,50 @@ namespace VietDonate.Infrastructure.Repositories
         {
             return await context.UserInformations
                 .AnyAsync(u => u.Phone == phone && !string.IsNullOrEmpty(u.Phone), cancellationToken);
+        }
+
+        public async Task<(List<UserIdentity> Users, int TotalCount)> GetPagedAsync(
+            int page,
+            int pageSize,
+            RoleType? role = null,
+            string? email = null,
+            string? name = null,
+            CancellationToken cancellationToken = default)
+        {
+            var query = context.UserIdentities
+                .Include(u => u.UserInformation)
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (role.HasValue)
+            {
+                query = query.Where(u => u.RoleType == role.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                query = query.Where(u => u.UserInformation != null && 
+                    u.UserInformation.Email != null && 
+                    u.UserInformation.Email.Contains(email));
+            }
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                query = query.Where(u => u.UserInformation != null && 
+                    u.UserInformation.FullName != null && 
+                    u.UserInformation.FullName.Contains(name));
+            }
+
+            query = query.OrderBy(u => u.Id);
+
+            var totalCount = await query.CountAsync(cancellationToken);
+
+            var users = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return (users, totalCount);
         }
     }
 } 

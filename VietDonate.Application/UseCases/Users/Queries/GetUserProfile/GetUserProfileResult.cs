@@ -14,6 +14,7 @@ namespace VietDonate.Application.UseCases.Users.Queries.GetUserProfile
         string? VerificationStatus,
         decimal TotalDonated,
         decimal TotalRecieved,
-        int CampaignCount);
+        int CampaignCount,
+        string Role);
 }
 

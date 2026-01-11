@@ -43,7 +43,8 @@ namespace VietDonate.Application.UseCases.Users.Queries.GetUserProfile
                 VerificationStatus: userInfo.VerificationStatus,
                 TotalDonated: userInfo.TotalDonated,
                 TotalRecieved: userInfo.TotalRecieved,
-                CampaignCount: userInfo.CampaignCount);
+                CampaignCount: userInfo.CampaignCount,
+                Role: requestContextService.Roles.FirstOrDefault() ?? string.Empty);
 
             return Result.Success(result);
         }
