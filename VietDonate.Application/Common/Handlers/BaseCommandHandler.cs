@@ -21,8 +21,9 @@ namespace VietDonate.Application.Common.Handlers
                 await _unitOfWork.CommitAsync();
                 return result;
             }
-            catch
+            catch(Exception ex)
             {
+                Console.Write(ex);
                 await _unitOfWork.RollbackAsync();
                 throw;
             }

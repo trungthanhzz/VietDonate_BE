@@ -5,18 +5,18 @@
 namespace VietDonate.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddRoleTypeToUserIdentity : Migration
+    public partial class AddRoleType : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<string>(
+            migrationBuilder.AddColumn<int>(
                 name: "RoleType",
                 table: "UserIdentities",
-                type: "character varying(10)",
-                maxLength: 10,
+                type: "integer",
+                maxLength: 50,
                 nullable: false,
-                defaultValue: "");
+                defaultValue: 0);
         }
 
         /// <inheritdoc />
