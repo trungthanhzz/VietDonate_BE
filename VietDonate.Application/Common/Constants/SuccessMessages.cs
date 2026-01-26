@@ -28,6 +28,16 @@ namespace VietDonate.Application.Common.Constants
             public const string CreatedSuccessfully = "Campaign created successfully";
             public const string UpdatedSuccessfully = "Campaign updated successfully";
             public const string DeletedSuccessfully = "Campaign deleted successfully";
+            public const string ApprovedSuccessfully = "Campaign approved successfully";
+            public const string RejectedSuccessfully = "Campaign rejected successfully";
+        }
+
+        public static class Media
+        {
+            public const string UploadedSuccessfully = "Media uploaded successfully";
+            public const string UpdatedSuccessfully = "Media updated successfully";
+            public const string DeletedSuccessfully = "Media deleted successfully";
+            public const string AssignedSuccessfully = "Media assigned to campaign successfully";
         }
     }
 }

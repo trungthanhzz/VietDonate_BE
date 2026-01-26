@@ -40,5 +40,64 @@ namespace VietDonate.Infrastructure.Repositories
             _context.Update(user);
             await _context.SaveChangesAsync(cancellationToken);
         }
+
+        public async Task<(List<Campaign> Campaigns, int TotalCount)> GetPagedAsync(
+            int page,
+            int pageSize,
+            string? name = null,
+            string? status = null,
+            string? type = null,
+            string? urgencyLevel = null,
+            Guid? ownerId = null,
+            string? description = null,
+            CancellationToken cancellationToken = default)
+        {
+            var query = _context.Campaigns
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                query = query.Where(c => c.Name.Contains(name));
+            }
+
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                query = query.Where(c => c.Status == status);
+            }
+
+            if (!string.IsNullOrWhiteSpace(type))
+            {
+                query = query.Where(c => c.Type == type);
+            }
+
+            if (!string.IsNullOrWhiteSpace(urgencyLevel))
+            {
+                query = query.Where(c => c.UrgencyLevel == urgencyLevel);
+            }
+
+            if (ownerId.HasValue)
+            {
+                query = query.Where(c => c.OwnerId == ownerId.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(description))
+            {
+                query = query.Where(c => 
+                    (c.ShortDescription != null && c.ShortDescription.Contains(description)) ||
+                    (c.FullStory != null && c.FullStory.Contains(description)));
+            }
+
+            query = query.OrderBy(c => c.CreatedDate);
+
+            var totalCount = await query.CountAsync(cancellationToken);
+
+            var campaigns = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return (campaigns, totalCount);
+        }
     }
 }

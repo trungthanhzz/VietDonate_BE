@@ -183,7 +183,7 @@ namespace VietDonate.API.Controllers
             if (!string.IsNullOrWhiteSpace(role) && Enum.TryParse<RoleType>(role, ignoreCase: true, out var parsedRole))
             {
                 roleType = parsedRole;
-            }
+        }
 
             var query = new GetUsersQuery(
                 Page: page,

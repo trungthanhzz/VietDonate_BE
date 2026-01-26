@@ -7,8 +7,9 @@ using VietDonate.Application.Common.Mediator;
 using VietDonate.Application.UseCases.Campaigns.Commands.CreateCampaign;
 using VietDonate.Application.UseCases.Campaigns.Commands.UpdateCampaign;
 using VietDonate.Application.UseCases.Campaigns.Commands.DeleteCampaign;
+using VietDonate.Application.UseCases.Campaigns.Commands.ApproveCampaign;
 using VietDonate.Application.UseCases.Campaigns.Queries.GetCampaign;
-using VietDonate.Application.UseCases.Campaigns.Queries.GetAllCampaigns;
+using VietDonate.Application.UseCases.Campaigns.Queries.GetCampaigns;
 using VietDonate.Infrastructure.ModelInfrastructure.Campaigns.Contracts;
 
 namespace VietDonate.API.Controllers
@@ -59,9 +60,26 @@ namespace VietDonate.API.Controllers
         [HttpGet]
         [AllowAnonymous]
         [Route("")]
-        public async Task<IActionResult> GetAllCampaigns()
+        public async Task<IActionResult> GetCampaigns(
+            [FromQuery] int page = 1,
+            [FromQuery] int pageSize = 20,
+            [FromQuery] string? name = null,
+            [FromQuery] string? status = null,
+            [FromQuery] string? type = null,
+            [FromQuery] string? urgencyLevel = null,
+            [FromQuery] Guid? ownerId = null,
+            [FromQuery] string? description = null)
         {
-            var query = new GetAllCampaignsQuery();
+            var query = new GetCampaignsQuery(
+                Page: page,
+                PageSize: pageSize,
+                Name: name,
+                Status: status,
+                Type: type,
+                UrgencyLevel: urgencyLevel,
+                OwnerId: ownerId,
+                Description: description);
+
             var result = await mediator.Send(query);
             return result.Match(
                 onSuccess: campaignsResult => Ok(campaignsResult),
@@ -93,6 +111,23 @@ namespace VietDonate.API.Controllers
             var result = await mediator.Send(command);
             return result.Match(
                 onSuccess: updateResult => Ok(updateResult),
+                onFailure: Problem
+            );
+        }
+
+        [HttpPost]
+        [Authorize(Policy = AuthorizationPolicies.RequireStaffOnly)]
+        [Route("{id}/approve")]
+        public async Task<IActionResult> ApproveCampaign(Guid id, [FromBody] ApproveCampaignRequest request)
+        {
+            var command = new ApproveCampaignCommand(
+                CampaignId: id,
+                Status: request.Status,
+                RejectionReason: request.RejectionReason
+            );
+            var result = await mediator.Send(command);
+            return result.Match(
+                onSuccess: approveResult => Ok(approveResult),
                 onFailure: Problem
             );
         }

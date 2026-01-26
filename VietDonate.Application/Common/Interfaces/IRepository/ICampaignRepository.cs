@@ -14,5 +14,15 @@ namespace VietDonate.Application.Common.Interfaces.IRepository
         Task<List<Campaign>> GetAllAsync(CancellationToken cancellationToken);
         Task RemoveAsync(Campaign user, CancellationToken cancellationToken);
         Task UpdateAsync(Campaign user, CancellationToken cancellationToken);
+        Task<(List<Campaign> Campaigns, int TotalCount)> GetPagedAsync(
+            int page,
+            int pageSize,
+            string? name = null,
+            string? status = null,
+            string? type = null,
+            string? urgencyLevel = null,
+            Guid? ownerId = null,
+            string? description = null,
+            CancellationToken cancellationToken = default);
     }
 }

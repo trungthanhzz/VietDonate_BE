@@ -48,6 +48,7 @@ namespace VietDonate.Infrastructure
             services.Configure<DbConfig>(configuration.GetSection(nameof(DbConfig)));
             services.Configure<RedisConfig>(configuration.GetSection(nameof(RedisConfig)));
             services.Configure<CookieConfig>(configuration.GetSection(CookieConfig.Section));
+            services.Configure<S3Config>(configuration.GetSection(nameof(S3Config)));
             return services;
         }
 
@@ -97,6 +98,8 @@ namespace VietDonate.Infrastructure
                     policy.RequireRole(nameof(RoleType.Admin)))
                 .AddPolicy(AuthorizationPolicies.RequireStaff, policy => 
                     policy.RequireRole(nameof(RoleType.Admin), nameof(RoleType.Staff)))
+                .AddPolicy(AuthorizationPolicies.RequireStaffOnly, policy => 
+                    policy.RequireRole(nameof(RoleType.Staff)))
                 .AddPolicy(AuthorizationPolicies.RequireUser, policy => 
                     policy.RequireRole(nameof(RoleType.Admin), nameof(RoleType.Staff), nameof(RoleType.User)));
             
@@ -128,9 +131,15 @@ namespace VietDonate.Infrastructure
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ICampaignRepository, CampaignRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IMediaRepository, MediaRepository>();
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
             services.AddScoped<IPasswordHasher, VietDonate.Infrastructure.Security.PasswordHasher.PasswordHasher>();
             services.AddTransient<VietDonate.Application.Common.Interfaces.IRequestContextService, VietDonate.Infrastructure.Common.RequestContextService>();
+            
+            // Register Storage Services
+            services.AddScoped<IStorageService, VietDonate.Infrastructure.Common.Storage.S3StorageService>();
+            services.AddScoped<ITempMediaService, VietDonate.Infrastructure.Common.Storage.TempMediaService>();
+            services.AddSingleton<IFileValidationSettings, VietDonate.Infrastructure.Common.Storage.FileValidationSettings>();
             
             return services;
         }
