@@ -36,6 +36,16 @@ public class ApiController : ControllerBase
         return Problem(result.Error);
     }
 
+    protected IActionResult Problem<TValue>(Result<TValue> result)
+    {
+        if (result.IsSuccess)
+        {
+            throw new InvalidOperationException("Cannot create problem result from successful result");
+        }
+
+        return Problem(result.Error);
+    }
+
     private ObjectResult Problem(Error error)
     {
         var statusCode = GetStatusCode(error);
