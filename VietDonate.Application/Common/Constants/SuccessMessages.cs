@@ -39,5 +39,24 @@ namespace VietDonate.Application.Common.Constants
             public const string DeletedSuccessfully = "Media deleted successfully";
             public const string AssignedSuccessfully = "Media assigned to campaign successfully";
         }
+
+        public static class Post
+        {
+            public const string CreatedSuccessfully = "Post created successfully";
+            public const string UpdatedSuccessfully = "Post updated successfully";
+            public const string DeletedSuccessfully = "Post deleted successfully";
+        }
+
+        public static class Like
+        {
+            public const string LikedSuccessfully = "Post liked successfully";
+            public const string UnlikedSuccessfully = "Post unliked successfully";
+        }
+
+        public static class Comment
+        {
+            public const string CreatedSuccessfully = "Comment created successfully";
+            public const string DeletedSuccessfully = "Comment deleted successfully";
+        }
     }
 }

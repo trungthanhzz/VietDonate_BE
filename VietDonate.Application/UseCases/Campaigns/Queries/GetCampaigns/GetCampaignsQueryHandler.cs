@@ -63,7 +63,10 @@ namespace VietDonate.Application.UseCases.Campaigns.Queries.GetCampaigns
                 Status: c.Status,
                 ViewCount: c.ViewCount,
                 DonorCount: c.DonorCount,
-                OwnerId: c.OwnerId
+                OwnerId: c.OwnerId,
+                OwnerName: c.OwnerUser?.UserInformation?.FullName
+                    ?? c.OwnerUser?.UserName
+                    ?? string.Empty
             )).ToList();
 
             var paginationMetadata = new PaginationMetadata(

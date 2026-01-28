@@ -13,7 +13,8 @@ namespace VietDonate.Application.UseCases.Campaigns.Queries.GetCampaigns
         string Status,
         int ViewCount,
         int DonorCount,
-        Guid OwnerId
+        Guid OwnerId,
+        string OwnerName
     );
 
     public record PaginationMetadata(

@@ -13,7 +13,9 @@ namespace VietDonate.Application.UseCases.Campaigns.Queries.GetAllCampaigns
         string Status,
         int ViewCount,
         int DonorCount,
-        Guid OwnerId
+        Guid OwnerId,
+        string OwnerName,
+        string ImageUrl
     );
 
     public record GetAllCampaignsResult(List<CampaignItem> Campaigns);

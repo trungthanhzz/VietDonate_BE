@@ -1,3 +1,5 @@
+using VietDonate.Application.UseCases.Media.Queries.GetCampaignMedia;
+
 namespace VietDonate.Application.UseCases.Campaigns.Queries.GetCampaign
 {
     public record GetCampaignResult(
@@ -27,6 +29,8 @@ namespace VietDonate.Application.UseCases.Campaigns.Queries.GetCampaign
         int DonorCount,
         DateTime? CreateTime,
         DateTime? UpdateTime,
-        Guid OwnerId
+        Guid OwnerId,
+        string OwnerName,
+        List<MediaItem> MediaItems
     );
 }

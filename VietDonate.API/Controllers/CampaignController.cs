@@ -10,6 +10,7 @@ using VietDonate.Application.UseCases.Campaigns.Commands.DeleteCampaign;
 using VietDonate.Application.UseCases.Campaigns.Commands.ApproveCampaign;
 using VietDonate.Application.UseCases.Campaigns.Queries.GetCampaign;
 using VietDonate.Application.UseCases.Campaigns.Queries.GetCampaigns;
+using VietDonate.Application.UseCases.Campaigns.Queries.GetTopEndingCampaigns;
 using VietDonate.Infrastructure.ModelInfrastructure.Campaigns.Contracts;
 
 namespace VietDonate.API.Controllers
@@ -83,6 +84,20 @@ namespace VietDonate.API.Controllers
             var result = await mediator.Send(query);
             return result.Match(
                 onSuccess: campaignsResult => Ok(campaignsResult),
+                onFailure: Problem
+            );
+        }
+
+        [HttpGet]
+        [AllowAnonymous]
+        [Route("top-by-end-time")]
+        public async Task<IActionResult> GetTopCampaignsByEndTime(
+            [FromQuery] int count = 10)
+        {
+            var query = new GetTopEndingCampaignsQuery(count);
+            var result = await mediator.Send(query);
+            return result.Match(
+                onSuccess: topCampaignsResult => Ok(topCampaignsResult),
                 onFailure: Problem
             );
         }

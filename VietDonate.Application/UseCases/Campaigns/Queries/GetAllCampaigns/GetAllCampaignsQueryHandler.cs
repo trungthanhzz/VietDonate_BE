@@ -1,3 +1,4 @@
+using VietDonate.Application.Common.Interfaces;
 using VietDonate.Application.Common.Interfaces.IRepository;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Application.Common.Result;
@@ -6,7 +7,9 @@ using VietDonate.Domain.Model.Campaigns;
 namespace VietDonate.Application.UseCases.Campaigns.Queries.GetAllCampaigns
 {
     public class GetAllCampaignsQueryHandler(
-        ICampaignRepository campaignRepository)
+        ICampaignRepository campaignRepository,
+        IMediaRepository mediaRepository,
+        IStorageService storageService)
         : IQueryHandler<GetAllCampaignsQuery, Result<GetAllCampaignsResult>>
     {
         public async Task<Result<GetAllCampaignsResult>> Handle(
@@ -15,21 +18,45 @@ namespace VietDonate.Application.UseCases.Campaigns.Queries.GetAllCampaigns
         {
             var campaigns = await campaignRepository.GetAllAsync(cancellationToken);
 
-            var campaignItems = campaigns.Select(c => new CampaignItem(
-                Id: c.Id,
-                Code: c.Code,
-                Name: c.Name,
-                CreatedDate: c.CreatedDate,
-                ShortDescription: c.ShortDescription,
-                TargetAmount: c.TargetAmount,
-                CurrentAmount: c.CurrentAmount,
-                Type: c.Type,
-                UrgencyLevel: c.UrgencyLevel,
-                Status: c.Status,
-                ViewCount: c.ViewCount,
-                DonorCount: c.DonorCount,
-                OwnerId: c.OwnerId
-            )).ToList();
+            var campaignItems = new List<CampaignItem>();
+
+            foreach (var campaign in campaigns)
+            {
+                var mediaList = await mediaRepository.GetByCampaignIdAsync(
+                    campaign.Id,
+                    cancellationToken);
+
+                var imageUrl = string.Empty;
+                if (mediaList.Count > 0)
+                {
+                    var firstMedia = mediaList.OrderBy(m => m.DisplayOrder)
+                        .ThenBy(m => m.CreateTime)
+                        .First();
+                    imageUrl = await storageService.GetUrlAsync(firstMedia.Path);
+                }
+
+                var campaignItem = new CampaignItem(
+                    Id: campaign.Id,
+                    Code: campaign.Code,
+                    Name: campaign.Name,
+                    CreatedDate: campaign.CreatedDate,
+                    ShortDescription: campaign.ShortDescription,
+                    TargetAmount: campaign.TargetAmount,
+                    CurrentAmount: campaign.CurrentAmount,
+                    Type: campaign.Type,
+                    UrgencyLevel: campaign.UrgencyLevel,
+                    Status: campaign.Status,
+                    ViewCount: campaign.ViewCount,
+                    DonorCount: campaign.DonorCount,
+                    OwnerId: campaign.OwnerId,
+                    OwnerName: campaign.OwnerUser?.UserInformation?.FullName
+                        ?? campaign.OwnerUser?.UserName
+                        ?? string.Empty,
+                    ImageUrl: imageUrl
+                );
+
+                campaignItems.Add(campaignItem);
+            }
 
             return Result.Success(new GetAllCampaignsResult(Campaigns: campaignItems));
         }

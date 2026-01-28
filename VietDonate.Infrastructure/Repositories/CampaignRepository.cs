@@ -1,7 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using VietDonate.Application.Common.Interfaces.IRepository;
 using VietDonate.Domain.Model.Campaigns;
 using VietDonate.Infrastructure.Common.Persistance;
+using System.Linq.Expressions;
 
 namespace VietDonate.Infrastructure.Repositories
 {
@@ -21,12 +22,18 @@ namespace VietDonate.Infrastructure.Repositories
 
         public async Task<Campaign> GetByIdAsync(Guid userId, CancellationToken cancellationToken)
         {
-            return await _context.Campaigns.FindAsync(userId, cancellationToken);
+            return await _context.Campaigns
+                .Include(c => c.OwnerUser)
+                    .ThenInclude(u => u.UserInformation)
+                .FirstOrDefaultAsync(c => c.Id == userId, cancellationToken);
         }
 
         public async Task<List<Campaign>> GetAllAsync(CancellationToken cancellationToken)
         {
-            return await _context.Campaigns.ToListAsync(cancellationToken);
+            return await _context.Campaigns
+                .Include(c => c.OwnerUser)
+                    .ThenInclude(u => u.UserInformation)
+                .ToListAsync(cancellationToken);
         }
 
         public async Task RemoveAsync(Campaign user, CancellationToken cancellationToken)
@@ -53,6 +60,8 @@ namespace VietDonate.Infrastructure.Repositories
             CancellationToken cancellationToken = default)
         {
             var query = _context.Campaigns
+                .Include(c => c.OwnerUser)
+                    .ThenInclude(u => u.UserInformation)
                 .AsNoTracking()
                 .AsQueryable();
 
@@ -98,6 +107,40 @@ namespace VietDonate.Infrastructure.Repositories
                 .ToListAsync(cancellationToken);
 
             return (campaigns, totalCount);
+        }
+
+        public async Task<List<Campaign>> GetTopByEndTimeAsync(
+            int count,
+            CancellationToken cancellationToken = default)
+        {
+            return await _context.Campaigns
+                .AsNoTracking()
+                .Include(c => c.OwnerUser)
+                    .ThenInclude(u => u.UserInformation)
+                .Where(c =>
+                    c.Status == "Approved" &&
+                    c.EndTime != null)
+                .OrderByDescending(c => c.EndTime)
+                .ThenByDescending(c => c.CreatedDate)
+                .Take(count)
+                .ToListAsync(cancellationToken);
+        }
+
+        public async Task<List<T>> GetTopByEndTimeAsync<T>(
+            int count,
+            Expression<Func<Campaign, T>> selector,
+            CancellationToken cancellationToken = default)
+        {
+            return await _context.Campaigns
+                .AsNoTracking()
+                .Where(c =>
+                    c.Status == "Approved" &&
+                    c.EndTime != null)
+                .OrderByDescending(c => c.EndTime)
+                .ThenByDescending(c => c.CreatedDate)
+                .Take(count)
+                .Select(selector)
+                .ToListAsync(cancellationToken);
         }
     }
 }

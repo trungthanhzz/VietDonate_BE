@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using VietDonate.Infrastructure.Common.Mediator;
 using VietDonate.Application.Common.Mediator;
@@ -130,6 +130,9 @@ namespace VietDonate.Infrastructure
         {
             services.AddScoped<IUnitOfWork, UnitOfWork>();
             services.AddScoped<ICampaignRepository, CampaignRepository>();
+            services.AddScoped<IPostRepository, PostRepository>();
+            services.AddScoped<ILikeRepository, LikeRepository>();
+            services.AddScoped<ICommentRepository, CommentRepository>();
             services.AddScoped<IUserRepository, UserRepository>();
             services.AddScoped<IMediaRepository, MediaRepository>();
             services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();

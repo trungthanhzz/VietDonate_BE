@@ -1,5 +1,6 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
+using System.Linq.Expressions;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -23,6 +24,15 @@ namespace VietDonate.Application.Common.Interfaces.IRepository
             string? urgencyLevel = null,
             Guid? ownerId = null,
             string? description = null,
+            CancellationToken cancellationToken = default);
+
+        Task<List<Campaign>> GetTopByEndTimeAsync(
+            int count,
+            CancellationToken cancellationToken = default);
+
+        Task<List<T>> GetTopByEndTimeAsync<T>(
+            int count,
+            Expression<Func<Campaign, T>> selector,
             CancellationToken cancellationToken = default);
     }
 }

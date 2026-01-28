@@ -1,12 +1,16 @@
+using VietDonate.Application.Common.Interfaces;
 using VietDonate.Application.Common.Interfaces.IRepository;
 using VietDonate.Application.Common.Mediator;
 using VietDonate.Application.Common.Result;
 using VietDonate.Domain.Model.Campaigns;
+using VietDonate.Application.UseCases.Media.Queries.GetCampaignMedia;
 
 namespace VietDonate.Application.UseCases.Campaigns.Queries.GetCampaign
 {
     public class GetCampaignQueryHandler(
-        ICampaignRepository campaignRepository) 
+        ICampaignRepository campaignRepository,
+        IMediaRepository mediaRepository,
+        IStorageService storageService) 
         : IQueryHandler<GetCampaignQuery, Result<GetCampaignResult>>
     {
         public async Task<Result<GetCampaignResult>> Handle(
@@ -19,6 +23,12 @@ namespace VietDonate.Application.UseCases.Campaigns.Queries.GetCampaign
             {
                 return Result.Failure<GetCampaignResult>(GetCampaignErrors.CampaignNotFound);
             }
+
+            var mediaItems = await GetMediaItemsAsync(campaign, cancellationToken);
+
+            var ownerName = campaign.OwnerUser?.UserInformation?.FullName
+                ?? campaign.OwnerUser?.UserName
+                ?? string.Empty;
 
             var result = new GetCampaignResult(
                 Id: campaign.Id,
@@ -47,10 +57,37 @@ namespace VietDonate.Application.UseCases.Campaigns.Queries.GetCampaign
                 DonorCount: campaign.DonorCount,
                 CreateTime: campaign.CreateTime,
                 UpdateTime: campaign.UpdateTime,
-                OwnerId: campaign.OwnerId
+                OwnerId: campaign.OwnerId,
+                OwnerName: ownerName,
+                MediaItems: mediaItems
             );
 
             return Result.Success(result);
+        }
+
+        async Task<List<MediaItem>> GetMediaItemsAsync(
+            Campaign campaign,
+            CancellationToken cancellationToken)
+        {
+            var mediaList = await mediaRepository.GetByCampaignIdAsync(campaign.Id, cancellationToken);
+
+            var mediaItems = new List<MediaItem>();
+            foreach (var media in mediaList)
+            {
+                var url = await storageService.GetUrlAsync(media.Path);
+                mediaItems.Add(new MediaItem(
+                    Id: media.Id,
+                    Type: media.Type,
+                    Status: media.Status,
+                    Path: media.Path,
+                    Url: url,
+                    DisplayOrder: media.DisplayOrder,
+                    CreateTime: media.CreateTime,
+                    UpdateTime: media.UpdateTime
+                ));
+            }
+
+            return mediaItems;
         }
     }
 }
