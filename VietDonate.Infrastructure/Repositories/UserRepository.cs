@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VietDonate.Application.Common.Interfaces.IRepository;
+using VietDonate.Domain.Common;
 using VietDonate.Domain.Model.User;
 using VietDonate.Infrastructure.Common.Persistance;
 
@@ -45,6 +46,65 @@ namespace VietDonate.Infrastructure.Repositories
         public async Task UpdateAsync(UserIdentity userIdentity, CancellationToken cancellationToken)
         {
             context.UserIdentities.Update(userIdentity);
+            if (userIdentity.UserInformation != null)
+            {
+                var entry = context.Entry(userIdentity.UserInformation);
+                entry.State = EntityState.Modified;
+            }
+            
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
+        public Task UpdateUserInformationPropertiesAsync(
+            UserInformation userInformation,
+            string? fullName,
+            string? phone,
+            string? email,
+            string? address,
+            string? avtUrl,
+            CancellationToken cancellationToken)
+        {
+            var entry = context.Entry(userInformation);
+            entry.State = EntityState.Modified;
+
+            // Update get-only properties from primary constructor using EF Core Entry API
+            if (fullName != null)
+                entry.Property(nameof(UserInformation.FullName)).CurrentValue = fullName;
+
+            if (phone != null)
+                entry.Property(nameof(UserInformation.Phone)).CurrentValue = phone;
+
+            if (email != null)
+                entry.Property(nameof(UserInformation.Email)).CurrentValue = email;
+
+            if (address != null)
+                entry.Property(nameof(UserInformation.Address)).CurrentValue = address;
+
+            if (avtUrl != null)
+                entry.Property(nameof(UserInformation.AvtUrl)).CurrentValue = avtUrl;
+
+            // Don't save here - let UpdateAsync handle the save
+            return Task.CompletedTask;
+        }
+
+        public async Task UpdatePasswordAsync(UserIdentity userIdentity, string newPasswordHash, CancellationToken cancellationToken)
+        {
+            var entry = context.Entry(userIdentity);
+            entry.State = EntityState.Modified;
+            
+            // Update PasswordHash property using EF Core Entry API
+            entry.Property(nameof(UserIdentity.PasswordHash)).CurrentValue = newPasswordHash;
+            
+            await context.SaveChangesAsync(cancellationToken);
+        }
+
+        public async Task UpdateRoleAsync(UserIdentity userIdentity, RoleType newRole, CancellationToken cancellationToken)
+        {
+            var entry = context.Entry(userIdentity);
+            entry.State = EntityState.Modified;
+            
+            entry.Property(nameof(UserIdentity.RoleType)).CurrentValue = newRole;
+            
             await context.SaveChangesAsync(cancellationToken);
         }
 
@@ -64,6 +124,50 @@ namespace VietDonate.Infrastructure.Repositories
         {
             return await context.UserInformations
                 .AnyAsync(u => u.Phone == phone && !string.IsNullOrEmpty(u.Phone), cancellationToken);
+        }
+
+        public async Task<(List<UserIdentity> Users, int TotalCount)> GetPagedAsync(
+            int page,
+            int pageSize,
+            RoleType? role = null,
+            string? email = null,
+            string? name = null,
+            CancellationToken cancellationToken = default)
+        {
+            var query = context.UserIdentities
+                .Include(u => u.UserInformation)
+                .AsNoTracking()
+                .AsQueryable();
+
+            if (role.HasValue)
+            {
+                query = query.Where(u => u.RoleType == role.Value);
+            }
+
+            if (!string.IsNullOrWhiteSpace(email))
+            {
+                query = query.Where(u => u.UserInformation != null && 
+                    u.UserInformation.Email != null && 
+                    u.UserInformation.Email.Contains(email));
+            }
+
+            if (!string.IsNullOrWhiteSpace(name))
+            {
+                query = query.Where(u => u.UserInformation != null && 
+                    u.UserInformation.FullName != null && 
+                    u.UserInformation.FullName.Contains(name));
+            }
+
+            query = query.OrderBy(u => u.Id);
+
+            var totalCount = await query.CountAsync(cancellationToken);
+
+            var users = await query
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(cancellationToken);
+
+            return (users, totalCount);
         }
     }
 } 

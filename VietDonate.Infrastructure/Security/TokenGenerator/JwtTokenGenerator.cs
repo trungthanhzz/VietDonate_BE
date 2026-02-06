@@ -38,4 +38,9 @@ public class JwtTokenGenerator(IOptions<JwtSettings> jwtOptions) : IJwtTokenGene
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
+
+    public int GetAccessTokenExpirationInMinutes()
+    {
+        return _jwtSettings.TokenExpirationInMinutes;
+    }
 }

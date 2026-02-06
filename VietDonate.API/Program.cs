@@ -6,11 +6,36 @@ using VietDonate.Application.Common.SwaggerExtension;
 using VietDonate.Infrastructure;
 using VietDonate.Application;
 using VietDonate.Infrastructure.Common.Middleware;
+using VietDonate.API.Utils.ExceptionHandler;
+using Serilog;
 
 var builder = WebApplication.CreateBuilder(args);
+
+Log.Logger = new LoggerConfiguration()
+    .ReadFrom.Configuration(builder.Configuration)
+    .Enrich.FromLogContext()
+    .WriteTo.Logger(lc => lc
+        .Filter.ByExcluding(logEvent =>
+        {
+            var sourceContext = logEvent.Properties.ContainsKey("SourceContext")
+                ? logEvent.Properties["SourceContext"].ToString()
+                : "";
+            
+            return sourceContext.Contains("NHibernate.SQL") ||
+                   sourceContext.Contains("NHibernate") ||
+                   sourceContext.Contains("Microsoft.EntityFrameworkCore.Database.Command") ||
+                   sourceContext.Contains("Microsoft.EntityFrameworkCore.Query");
+        })
+        .WriteTo.File(
+            path: "logs/log-.txt",
+            rollingInterval: RollingInterval.Day,
+            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}",
+            retainedFileCountLimit: 30))
+    .CreateLogger();
+
+builder.Host.UseSerilog();
 var services = builder.Services;
 var configuration = builder.Configuration;
-// Add services to the container.
 
 services.AddApiVersioning(options =>
 {
@@ -31,11 +56,14 @@ services
     .AddInfrastructure(configuration);
 services.AddControllers();
 
+services.AddExceptionHandler<CustomExceptionHandler>();
+services.AddProblemDetails();
+
 services.AddCors(options =>
 {
     options.AddDefaultPolicy(policy =>
     {
-        policy.WithOrigins(configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:3000", "http://localhost:5173" })
+        policy.WithOrigins(configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? new[] { "http://localhost:3000", "http://localhost:5173", "http://localhost:3002" })
               .AllowAnyMethod()
               .AllowAnyHeader()
               .AllowCredentials();
@@ -57,6 +85,9 @@ app.UseSwaggerUI(options =>
 });
 
 
+
+// Use exception handler (must be early in the pipeline)
+app.UseExceptionHandler();
 
 app.UseHttpsRedirection();
 

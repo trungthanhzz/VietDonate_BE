@@ -7,4 +7,6 @@ public interface IJwtTokenGenerator
         Guid jti,
         List<string> permissions,
         List<string> roles);
+
+    int GetAccessTokenExpirationInMinutes();
 }
